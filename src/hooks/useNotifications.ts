@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDemands } from "@/contexts/DemandContext";
 import { useTransactions } from "@/contexts/TransactionContext";
+import { toast } from "sonner";
 
 export type NotificationType = "prazo" | "pagamento" | "alerta";
 export type NotificationSeverity = "info" | "warn" | "danger";
@@ -20,6 +21,9 @@ export function useNotifications() {
   const { demands } = useDemands();
   const { transactions } = useTransactions();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [permission, setPermission] = useState<NotificationPermission>(
+    typeof Notification !== "undefined" ? Notification.permission : "default"
+  );
 
   const computed = useMemo<AppNotification[]>(() => {
     const now = new Date();
@@ -88,6 +92,24 @@ export function useNotifications() {
   }, [computed]);
 
   const clearNotifications = () => setNotifications([]);
+  const requestPermission = async () => {
+    if (typeof Notification === "undefined") {
+      toast.error("Seu navegador não suporta notificações.");
+      return;
+    }
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      if (result === "granted") {
+        toast.success("Notificações ativadas");
+      } else if (result === "denied") {
+        toast.error("Notificações bloqueadas no navegador");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível ativar as notificações.");
+    }
+  };
 
-  return { notifications, clearNotifications };
+  return { notifications, clearNotifications, permission, requestPermission };
 }

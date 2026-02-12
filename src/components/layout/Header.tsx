@@ -27,7 +27,7 @@ const severityToClasses = (sev: "info" | "warn" | "danger") => ({
 
 export function Header({ totalCaixa, onMenuClick }: HeaderProps) {
   const { profile, role, signOut, user } = useAuth();
-  const { notifications, clearNotifications } = useNotifications();
+  const { notifications, clearNotifications, permission, requestPermission } = useNotifications();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -59,6 +59,17 @@ export function Header({ totalCaixa, onMenuClick }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        {permission !== "granted" && (
+          <Button
+            variant="outline"
+            className="h-10 px-3 text-xs sm:text-sm gap-2"
+            onClick={requestPermission}
+          >
+            <BellDot className="w-4 h-4" />
+            Ativar notificações
+          </Button>
+        )}
+
         {/* Period Selector */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

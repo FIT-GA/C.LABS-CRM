@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import logoImage from "@/assets/logo.png";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +18,7 @@ export default function Auth() {
   const [telefone, setTelefone] = useState("");
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
@@ -84,7 +86,7 @@ export default function Auth() {
               <Label htmlFor="email" className="text-sm text-white">E-mail</Label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <i className="fi fi-rr-envelope text-lg" aria-hidden="true"></i>
+                  <Mail className="w-4 h-4" aria-hidden="true" />
                 </span>
                 <Input
                   id="email"
@@ -102,11 +104,11 @@ export default function Auth() {
               <Label htmlFor="password" className="text-sm text-white">Senha</Label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <i className="fi fi-rr-lock text-lg" aria-hidden="true"></i>
+                  <Lock className="w-4 h-4" aria-hidden="true" />
                 </span>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -117,14 +119,10 @@ export default function Auth() {
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 grid place-items-center rounded-lg border border-primary/40 bg-primary/10 text-muted-foreground hover:bg-primary/20"
-                  onClick={() => {
-                    const input = document.getElementById("password") as HTMLInputElement | null;
-                    if (!input) return;
-                    input.type = input.type === "password" ? "text" : "password";
-                  }}
+                  onClick={() => setShowPassword((v) => !v)}
                   aria-label="Mostrar ou ocultar senha"
                 >
-                  <i className="fi fi-rr-eye text-base" aria-hidden="true"></i>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>

@@ -8,13 +8,15 @@ import { Client, ClientFormData } from "@/types/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Clientes() {
-  const { clients, addClient, removeClient, updateClient, totalFaturamento } = useClients();
+  const { clients, addClient, removeClient, updateClient, totalFaturamento, loading } = useClients();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
 
   const filteredClients = clients.filter(
     (client) =>
@@ -23,12 +25,23 @@ export default function Clientes() {
       client.responsavel.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (data: ClientFormData) => {
-    if (editingClient) {
-      updateClient(editingClient.id, data);
-      setEditingClient(null);
-    } else {
-      addClient(data);
+  const handleSubmit = async (data: ClientFormData) => {
+    try {
+      if (editingClient) {
+        await updateClient(editingClient.id, data);
+        toast({ title: "Cliente atualizado", description: data.razaoSocial });
+        setEditingClient(null);
+      } else {
+        await addClient(data);
+        toast({ title: "Cliente cadastrado", description: data.razaoSocial });
+      }
+      setIsFormOpen(false);
+    } catch (err: any) {
+      toast({
+        title: "Erro ao salvar cliente",
+        description: err?.message || "Tente novamente",
+        variant: "destructive",
+      });
     }
   };
 
@@ -54,8 +67,7 @@ export default function Clientes() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
               <p className="text-sm text-muted-foreground">
-                {clients.length} cliente{clients.length !== 1 ? "s" : ""} cadastrado
-                {clients.length !== 1 ? "s" : ""}
+                {loading ? "Carregando..." : `${clients.length} cliente${clients.length !== 1 ? "s" : ""} cadastrado${clients.length !== 1 ? "s" : ""}`}
               </p>
             </div>
           </div>

@@ -105,7 +105,7 @@ export default function Financeiro() {
                 onClick={() => handleAddTransaction(undefined, "despesa")}
               >
                 <ArrowUpCircle className="w-4 h-4" />
-                Criar Saída
+                Criar Despesa
               </Button>
             </div>
           </div>

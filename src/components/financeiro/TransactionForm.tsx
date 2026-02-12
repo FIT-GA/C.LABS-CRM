@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
@@ -57,11 +58,12 @@ const transactionSchema = z
 type TransactionSchemaType = z.infer<typeof transactionSchema>;
 
 interface TransactionFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSubmit: (data: TransactionFormData) => void;
   defaultMes?: number;
   defaultTipo?: "entrada" | "despesa";
+  trigger?: React.ReactNode;
 }
 
 export function TransactionForm({
@@ -70,11 +72,20 @@ export function TransactionForm({
   onSubmit,
   defaultMes,
   defaultTipo = "entrada",
+  trigger,
 }: TransactionFormProps) {
   const { toast } = useToast();
   const { clients } = useClients();
   const currentYear = new Date().getFullYear();
   const defaultMonth = defaultMes || new Date().getMonth() + 1;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const controlled = typeof open === "boolean";
+  const isOpen = controlled ? open : internalOpen;
+
+  const handleOpenChange = (next: boolean) => {
+    if (!controlled) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
 
   const {
     register,
@@ -103,7 +114,7 @@ export function TransactionForm({
 
   // Reaplica defaults toda vez que abrir ou mudar mês/tipo padrão
   useEffect(() => {
-    if (open) {
+    if (isOpen) {
       reset({
         tipo: defaultTipo,
         descricao: "",
@@ -118,7 +129,7 @@ export function TransactionForm({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, defaultMes, defaultTipo]);
+  }, [isOpen, defaultMes, defaultTipo]);
 
   const handleFormSubmit = (data: TransactionSchemaType) => {
     onSubmit(data as TransactionFormData);
@@ -127,16 +138,17 @@ export function TransactionForm({
       description: `${data.descricao} - R$ ${data.valor.toFixed(2)}`,
     });
     reset();
-    onOpenChange(false);
+    handleOpenChange(false);
   };
 
   const handleClose = () => {
     reset();
-    onOpenChange(false);
+    handleOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-[500px] bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-primary">

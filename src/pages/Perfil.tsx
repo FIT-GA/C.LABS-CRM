@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Camera, Loader2, Mail, Phone, User, Shield } from "lucide-react";
 
 export default function Perfil() {
-  const { user, profile, role, updateProfile, uploadAvatar } = useAuth();
+  const { user, profile, role, signOut, updateProfile, uploadAvatar } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +72,8 @@ export default function Perfil() {
       .slice(0, 2);
   };
 
+  const effectiveRole = role || profile?.nivel_acesso || "colaborador";
+
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
@@ -116,9 +118,13 @@ export default function Perfil() {
             <div>
               <h3 className="text-lg font-semibold">{profile?.nome || "Usuário"}</h3>
               <p className="text-muted-foreground">{user?.email}</p>
-              <Badge variant={role === "admin" ? "default" : "secondary"} className="mt-2">
+              <Badge variant={effectiveRole === "admin" || effectiveRole === "ceo" ? "default" : "secondary"} className="mt-2">
                 <Shield className="w-3 h-3 mr-1" />
-                {role === "admin" ? "Administrador" : "Colaborador"}
+                {effectiveRole === "ceo"
+                  ? "CEO"
+                  : effectiveRole === "admin"
+                  ? "Administrador"
+                  : "Colaborador"}
               </Badge>
             </div>
           </CardContent>
@@ -185,26 +191,35 @@ export default function Perfil() {
               </Label>
               <div className="p-3 rounded-lg bg-muted/50">
                 <p className="font-medium">
-                  {role === "admin" ? "Administrador" : "Colaborador"}
+                  {effectiveRole === "ceo"
+                    ? "CEO"
+                    : effectiveRole === "admin"
+                    ? "Administrador"
+                    : "Colaborador"}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {role === "admin"
+                  {effectiveRole === "ceo" || effectiveRole === "admin"
                     ? "Você tem acesso total ao sistema, incluindo Dashboard, Clientes, Contratos, Financeiro e Demandas."
                     : "Você tem acesso às Tarefas e Demandas do sistema."}
                 </p>
               </div>
             </div>
 
-            <Button onClick={handleSave} disabled={isLoading} className="w-full mt-4">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                "Salvar Alterações"
-              )}
-            </Button>
+            <div className="flex gap-3 w-full mt-4">
+              <Button onClick={handleSave} disabled={isLoading} className="flex-1">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar Alterações"
+                )}
+              </Button>
+              <Button variant="outline" className="w-36" onClick={signOut}>
+                Sair
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

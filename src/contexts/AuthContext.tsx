@@ -224,6 +224,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const uploadAvatar = async (file: File) => {
     try {
+      // Mock mode: apenas salva localmente em memória
+      if (useMockAuth()) {
+        const url = URL.createObjectURL(file);
+        setProfile((prev) =>
+          prev
+            ? { ...prev, avatar_url: url }
+            : {
+                id: crypto.randomUUID(),
+                user_id: "mock",
+                nome: prev?.nome || "Usuário Mock",
+                telefone: prev?.telefone || null,
+                cpf: prev?.cpf || null,
+                cargo: prev?.cargo || null,
+                nivel_acesso: prev?.nivel_acesso || role || "colaborador",
+                avatar_url: url,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }
+        );
+        return { url, error: null };
+      }
+
       if (!user) throw new Error("Usuário não autenticado");
 
       const fileExt = file.name.split(".").pop();

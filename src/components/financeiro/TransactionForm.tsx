@@ -58,7 +58,7 @@ type TransactionSchemaType = z.infer<typeof transactionSchema>;
 
 interface TransactionFormProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   onSubmit: (data: TransactionFormData) => void;
   defaultMes?: number;
   defaultTipo?: "entrada" | "despesa";
@@ -66,7 +66,7 @@ interface TransactionFormProps {
 
 export function TransactionForm({
   open,
-  onOpenChange,
+  onClose,
   onSubmit,
   defaultMes,
   defaultTipo = "entrada",
@@ -127,16 +127,16 @@ export function TransactionForm({
       description: `${data.descricao} - R$ ${data.valor.toFixed(2)}`,
     });
     reset();
-    onOpenChange(false);
+    onClose();
   };
 
   const handleClose = () => {
     reset();
-    onOpenChange(false);
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[500px] bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-primary">

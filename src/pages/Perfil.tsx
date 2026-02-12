@@ -9,10 +9,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Camera, Loader2, Mail, Phone, User, Shield } from "lucide-react";
+import { Camera, Loader2, Mail, Phone, User, Shield, BellDot } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function Perfil() {
   const { user, profile, role, signOut, updateProfile, uploadAvatar } = useAuth();
+  const { enabled: notificationsEnabled, setEnabled: setNotificationsEnabled, requestPermission, permission, clearNotifications } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,6 +32,24 @@ export default function Perfil() {
       toast.error("Erro ao atualizar perfil");
     } else {
       toast.success("Perfil atualizado com sucesso!");
+    }
+  };
+
+  const handleToggleNotifications = async (checked: boolean) => {
+    if (!checked) {
+      setNotificationsEnabled(false);
+      clearNotifications();
+      toast.message("Notificações desativadas");
+      return;
+    }
+    // enabling
+    const result = await requestPermission();
+    if (result === "granted") {
+      setNotificationsEnabled(true);
+      toast.success("Notificações ativadas");
+    } else {
+      setNotificationsEnabled(false);
+      toast.error("Ative permissões no navegador para receber notificações.");
     }
   };
 
@@ -219,6 +240,28 @@ export default function Perfil() {
               <Button variant="outline" className="w-36" onClick={signOut}>
                 Sair
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notificações */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BellDot className="w-5 h-5" />
+              Notificações
+            </CardTitle>
+            <CardDescription>Controle o recebimento de alertas do app</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-foreground font-medium">Alertas e lembretes</p>
+              <p className="text-sm text-muted-foreground">
+                Receba avisos de prazos e pagamentos. Status: {notificationsEnabled ? "ativado" : "desativado"} {permission !== "granted" && notificationsEnabled ? "(permita no navegador)" : ""}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={notificationsEnabled} onCheckedChange={handleToggleNotifications} />
             </div>
           </CardContent>
         </Card>

@@ -16,14 +16,38 @@ export interface AppNotification {
 }
 
 const dayMs = 24 * 60 * 60 * 1000;
+const ENABLE_KEY = "crm_notifications_enabled";
 
 export function useNotifications() {
   const { demands } = useDemands();
   const { transactions } = useTransactions();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [enabled, setEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(ENABLE_KEY);
+      if (saved === null) return true;
+      return saved === "true";
+    } catch {
+      return true;
+    }
+  });
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ENABLE_KEY, String(enabled));
+    } catch {
+      /* ignore */
+    }
+    if (!enabled) {
+      setNotifications([]);
+    } else {
+      setNotifications(computed);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled]);
 
   const computed = useMemo<AppNotification[]>(() => {
     const now = new Date();
@@ -88,14 +112,16 @@ export function useNotifications() {
   }, [demands, transactions]);
 
   useEffect(() => {
-    setNotifications(computed);
-  }, [computed]);
+    if (enabled) {
+      setNotifications(computed);
+    }
+  }, [computed, enabled]);
 
   const clearNotifications = () => setNotifications([]);
   const requestPermission = async () => {
     if (typeof Notification === "undefined") {
       toast.error("Seu navegador não suporta notificações.");
-      return;
+      return "denied";
     }
     try {
       const result = await Notification.requestPermission();
@@ -105,11 +131,13 @@ export function useNotifications() {
       } else if (result === "denied") {
         toast.error("Notificações bloqueadas no navegador");
       }
+      return result;
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível ativar as notificações.");
+      return "denied";
     }
   };
 
-  return { notifications, clearNotifications, permission, requestPermission };
+  return { notifications: enabled ? notifications : [], clearNotifications, permission, requestPermission, enabled, setEnabled };
 }

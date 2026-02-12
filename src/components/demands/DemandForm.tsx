@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -50,7 +50,7 @@ type DemandSchemaType = z.infer<typeof demandSchema>;
 interface DemandFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: DemandFormData) => void;
+  onSubmit: (data: DemandFormData) => Promise<void>;
   defaultValues?: Partial<DemandFormData>;
   isEdit?: boolean;
 }
@@ -88,7 +88,14 @@ export function DemandForm({
     },
   });
 
-  const handleFormSubmit = (data: DemandSchemaType) => {
+  useEffect(() => {
+    if (open) {
+      setTarefas(defaultValues?.tarefas || []);
+      setNovaTarefa("");
+    }
+  }, [defaultValues, open]);
+
+  const handleFormSubmit = async (data: DemandSchemaType) => {
     const formData: DemandFormData = {
       clientId: data.clientId,
       demanda: data.demanda,
@@ -100,7 +107,7 @@ export function DemandForm({
       prioridade: data.prioridade,
       tarefas,
     };
-    onSubmit(formData);
+    await onSubmit(formData);
     toast({
       title: isEdit ? "Demanda atualizada!" : "Demanda criada!",
       description: data.demanda,

@@ -46,12 +46,12 @@ export default function Demandas() {
     });
   }, [demands, searchTerm, statusFilter]);
 
-  const handleSubmit = (data: DemandFormData) => {
+  const handleSubmit = async (data: DemandFormData) => {
     if (editingDemand) {
-      updateDemand(editingDemand.id, data);
+      await updateDemand(editingDemand.id, data);
       setEditingDemand(null);
     } else {
-      addDemand(data);
+      await addDemand(data);
     }
   };
 

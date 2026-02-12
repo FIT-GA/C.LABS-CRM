@@ -1,14 +1,37 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TopClientsChart } from "@/components/dashboard/TopClientsChart";
 import { RevenueGoalCard } from "@/components/dashboard/RevenueGoalCard";
 import { useClients } from "@/contexts/ClientContext";
 import { DollarSign, CreditCard, TrendingUp, Clock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const { clients, totalFaturamento } = useClients();
+  const { user } = useAuth();
+  const storageKey = useMemo(() => `crm_revenue_goal_${user?.id ?? "anon"}`, [user?.id]);
   const [goal, setGoal] = useState(15000);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = Number(saved);
+        if (!Number.isNaN(parsed) && parsed > 0) setGoal(parsed);
+      }
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, goal.toString());
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [goal, storageKey]);
 
   // Calculate metrics from clients data
   const metricsData = {

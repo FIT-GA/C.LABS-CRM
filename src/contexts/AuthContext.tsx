@@ -16,6 +16,9 @@ interface Profile {
   user_id: string;
   nome: string;
   telefone: string | null;
+  cpf?: string | null;
+  cargo?: string | null;
+  nivel_acesso?: AppRole | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
@@ -28,7 +31,7 @@ interface AuthContextType {
   role: AppRole | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, nome: string, telefone: string, role: AppRole) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, nome: string, telefone: string, role: AppRole, cpf?: string, cargo?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: Error | null }>;
   uploadAvatar: (file: File) => Promise<{ url: string | null; error: Error | null }>;
@@ -133,13 +136,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, nome: string, telefone: string, role: AppRole) => {
+  const signUp = async (email: string, password: string, nome: string, telefone: string, role: AppRole, cpf?: string, cargo?: string) => {
     try {
       if (useMockAuth()) {
         mockUsers.push({ email, password, nome, role, 
           });
         setRole(role);
-        setProfile({ id: crypto.randomUUID(), user_id: "mock", nome, telefone: telefone || null, avatar_url: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+        setProfile({ id: crypto.randomUUID(), user_id: "mock", nome, telefone: telefone || null, cpf: cpf || null, cargo: cargo || null, nivel_acesso: role, avatar_url: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
         return { error: null };
       }
       const redirectUrl = `${window.location.origin}/`;
@@ -160,6 +163,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user_id: authData.user.id,
         nome,
         telefone: telefone || null,
+        cpf: cpf || null,
+        cargo: cargo || null,
+        nivel_acesso: role,
       });
 
       if (profileError) throw profileError;
@@ -171,6 +177,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (roleError) throw roleError;
+
+      // Log access (only if caller is manager; ignore errors silently)
+      if (user?.id) {
+        await supabase.from("acessos").insert({
+          user_id: authData.user.id,
+          created_by: user.id,
+          cpf: cpf || null,
+          cargo: cargo || null,
+          role,
+        });
+      }
 
       return { error: null };
     } catch (error) {

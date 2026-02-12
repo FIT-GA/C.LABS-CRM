@@ -44,7 +44,7 @@ export default function Auth() {
         setLoading(false);
         return;
       }
-      const { error } = await signUp(email, password, nome, telefone, "admin");
+      const { error } = await signUp(email, password, nome, telefone, "admin", undefined, undefined);
       if (error) {
         toast.error(error.message || "Erro ao criar conta");
       } else {

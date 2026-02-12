@@ -14,7 +14,7 @@ export default function Acessos() {
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
   const [cargo, setCargo] = useState("");
-  const [nivel, setNivel] = useState<"admin" | "colaborador">("colaborador");
+  const [nivel, setNivel] = useState<"ceo" | "admin" | "colaborador">("colaborador");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +25,7 @@ export default function Acessos() {
       setLoading(false);
       return;
     }
-    const { error } = await signUp(email, password, nome, "", nivel);
+    const { error } = await signUp(email, password, nome, "", nivel, cpf, cargo);
     if (error) {
       toast.error(error.message || "Erro ao criar acesso.");
     } else {
@@ -70,10 +70,11 @@ export default function Acessos() {
             </div>
             <div className="space-y-2">
               <Label>Nível de acesso</Label>
-              <Select value={nivel} onValueChange={(v: "admin" | "colaborador") => setNivel(v)}>
+              <Select value={nivel} onValueChange={(v: "ceo" | "admin" | "colaborador") => setNivel(v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">CEO / Admin</SelectItem>
+                  <SelectItem value="ceo">CEO</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="colaborador">Colaborador</SelectItem>
                 </SelectContent>
               </Select>

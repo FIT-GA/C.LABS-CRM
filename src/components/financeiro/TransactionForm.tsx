@@ -130,6 +130,11 @@ export function TransactionForm({
     onOpenChange(false);
   };
 
+  const handleClose = () => {
+    reset();
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] bg-card border-border">
@@ -327,7 +332,7 @@ export function TransactionForm({
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
             <Button type="submit">Registrar</Button>

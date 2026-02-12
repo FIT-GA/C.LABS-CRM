@@ -44,7 +44,7 @@ export default function Financeiro() {
 
   const handleAddTransaction = (mes?: number, tipo?: "entrada" | "despesa") => {
     setFormDefaults({ mes, tipo });
-    requestAnimationFrame(() => setIsFormOpen(true));
+    setIsFormOpen(true);
   };
 
   const handleSubmit = (data: TransactionFormData) => {
@@ -89,23 +89,10 @@ export default function Financeiro() {
                 ))}
               </SelectContent>
             </Select>
-            {/* Trigger passa para o Dialog interno, garantindo o “estilo janela” */}
-            <TransactionForm
-              open={isFormOpen}
-              onOpenChange={(o) => {
-                setIsFormOpen(o);
-                if (!o) setFormDefaults({});
-              }}
-              onSubmit={handleSubmit}
-              defaultMes={formDefaults.mes}
-              defaultTipo={formDefaults.tipo}
-              trigger={
-                <Button type="button" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Nova Transação
-                </Button>
-              }
-            />
+            <Button type="button" className="gap-2" onClick={() => handleAddTransaction()}>
+              <Plus className="w-4 h-4" />
+              Nova Transação
+            </Button>
           </div>
         </div>
 
@@ -193,6 +180,16 @@ export default function Financeiro() {
         </div>
 
         {/* Form Modal */}
+        <TransactionForm
+          open={isFormOpen}
+          onOpenChange={(o) => {
+            setIsFormOpen(o);
+            if (!o) setFormDefaults({});
+          }}
+          onSubmit={handleSubmit}
+          defaultMes={formDefaults.mes}
+          defaultTipo={formDefaults.tipo}
+        />
       </div>
     </MainLayout>
   );

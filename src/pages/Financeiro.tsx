@@ -23,7 +23,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 
 export default function Financeiro() {
   const { transactions, addTransaction, removeTransaction, getMonthlyTotals, totalEntradas, totalDespesas } = useTransactions();
@@ -89,10 +89,25 @@ export default function Financeiro() {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="button" className="gap-2" onClick={() => handleAddTransaction()}>
-              <Plus className="w-4 h-4" />
-              Nova Transação
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                className="gap-2 bg-green-600 hover:bg-green-500 text-white"
+                onClick={() => handleAddTransaction(undefined, "entrada")}
+              >
+                <ArrowDownCircle className="w-4 h-4" />
+                Criar Entrada
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                className="gap-2"
+                onClick={() => handleAddTransaction(undefined, "despesa")}
+              >
+                <ArrowUpCircle className="w-4 h-4" />
+                Criar Saída
+              </Button>
+            </div>
           </div>
         </div>
 

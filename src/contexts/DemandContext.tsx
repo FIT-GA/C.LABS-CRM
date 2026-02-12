@@ -3,6 +3,7 @@ import { Demand, DemandFormData, DemandStatus } from "@/types/demand";
 import { useClients } from "./ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
+import { safeId } from "@/lib/safeId";
 
 interface DemandContextType {
   demands: Demand[];
@@ -25,6 +26,7 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { clients } = useClients();
   const { user } = useAuth();
+  const storageKey = "crm_mock_demands";
 
   const mapDemand = (row: any): Demand => {
     const clientName = clients.find((c) => c.id === row.client_id)?.razaoSocial || row.client_name || "Cliente não encontrado";
@@ -51,6 +53,19 @@ export function DemandProvider({ children }: { children: ReactNode }) {
 
   const fetchDemands = async () => {
     setLoading(true);
+    if (!user) {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        const parsed: Demand[] = raw ? JSON.parse(raw) : [];
+        setDemands(parsed.map((d) => ({ ...d, dataPedido: new Date(d.dataPedido), dataEntrega: new Date(d.dataEntrega), createdAt: new Date(d.createdAt) })));
+      } catch {
+        setDemands([]);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("demands")
@@ -73,6 +88,28 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   }, [clients.length]);
 
   const addDemand = async (data: DemandFormData) => {
+    if (!user) {
+      const newDemand: Demand = {
+        id: safeId("demand"),
+        clientId: data.clientId || "",
+        clientName: clients.find((c) => c.id === data.clientId)?.razaoSocial || "Cliente não encontrado",
+        demanda: data.demanda,
+        descricao: data.descricao || "",
+        dataPedido: data.dataPedido,
+        dataEntrega: data.dataEntrega,
+        responsavel: data.responsavel,
+        status: data.status,
+        prioridade: data.prioridade,
+        tarefas: data.tarefas || [],
+        createdAt: new Date(),
+      };
+      setDemands((prev) => {
+        const next = [newDemand, ...prev];
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+      return;
+    }
     try {
       const payload = {
         client_id: data.clientId || null,
@@ -112,6 +149,14 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   };
 
   const removeDemand = async (id: string) => {
+    if (!user) {
+      setDemands((prev) => {
+        const next = prev.filter((d) => d.id !== id);
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+      return;
+    }
     try {
       const { error } = await supabase.from("demands").delete().eq("id", id);
       if (error) throw error;
@@ -123,6 +168,25 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   };
 
   const updateDemand = async (id: string, data: Partial<DemandFormData>) => {
+    if (!user) {
+      setDemands((prev) => {
+        const next = prev.map((d) =>
+          d.id === id
+            ? {
+                ...d,
+                ...data,
+                dataPedido: data.dataPedido ?? d.dataPedido,
+                dataEntrega: data.dataEntrega ?? d.dataEntrega,
+                clientName: data.clientId ? clients.find((c) => c.id === data.clientId)?.razaoSocial || d.clientName : d.clientName,
+                tarefas: data.tarefas ?? d.tarefas,
+              }
+            : d
+        );
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+      return;
+    }
     try {
       const payload: any = {};
       if (data.clientId !== undefined) payload.client_id = data.clientId || null;
@@ -162,6 +226,21 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleTask = async (demandId: string, taskId: string) => {
+    if (!user) {
+      setDemands((prev) => {
+        const next = prev.map((d) =>
+          d.id === demandId
+            ? {
+                ...d,
+                tarefas: d.tarefas.map((t) => (t.id === taskId ? { ...t, concluida: !t.concluida } : t)),
+              }
+            : d
+        );
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+      return;
+    }
     try {
       const demand = demands.find((d) => d.id === demandId);
       const task = demand?.tarefas.find((t) => t.id === taskId);
@@ -182,6 +261,19 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   };
 
   const addTask = async (demandId: string, titulo: string) => {
+    if (!user) {
+      const newTask = { id: safeId("task"), titulo, concluida: false };
+      setDemands((prev) =>
+        prev.map((d) =>
+          d.id === demandId ? { ...d, tarefas: [...d.tarefas, newTask] } : d
+        )
+      );
+      const next = demands.map((d) =>
+        d.id === demandId ? { ...d, tarefas: [...d.tarefas, newTask] } : d
+      );
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from("demand_tasks")

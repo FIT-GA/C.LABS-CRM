@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Client, ClientFormData } from "@/types/client";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthContext";
 
 interface ClientContextType {
   clients: Client[];
@@ -16,10 +17,27 @@ const ClientContext = createContext<ClientContextType | undefined>(undefined);
 export function ClientProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const storageKey = "crm_mock_clients";
 
   // Carrega clientes do Supabase
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
+      // Modo mock: usuário não autenticado → usar storage local
+      if (!user) {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          const parsed: Client[] = raw ? JSON.parse(raw) : [];
+          setClients(parsed);
+        } catch {
+          setClients([]);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from("clients")
@@ -41,14 +59,36 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         setClients(mapped);
       } catch (err) {
         console.error("Erro ao carregar clientes", err);
+        setClients([]);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, []);
+  }, [user]);
 
   const addClient = async (data: ClientFormData) => {
+    // Modo mock: apenas grava localmente
+    if (!user) {
+      const newClient: Client = {
+        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
+        razaoSocial: data.razaoSocial,
+        cnpj: data.cnpj,
+        endereco: data.endereco,
+        valorPago: data.valorPago,
+        recorrencia: data.recorrencia,
+        responsavel: data.responsavel,
+        contatoInterno: data.contatoInterno,
+        createdAt: new Date(),
+      };
+      setClients((prev) => {
+        const next = [newClient, ...prev];
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+      return;
+    }
+
     const { data: inserted, error } = await supabase
       .from("clients")
       .insert({
@@ -78,12 +118,42 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   };
 
   const removeClient = async (id: string) => {
+    if (!user) {
+      setClients((prev) => {
+        const next = prev.filter((client) => client.id !== id);
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+      return;
+    }
     const { error } = await supabase.from("clients").delete().eq("id", id);
     if (error) throw error;
     setClients((prev) => prev.filter((client) => client.id !== id));
   };
 
   const updateClient = async (id: string, data: ClientFormData) => {
+    if (!user) {
+      setClients((prev) => {
+        const next = prev.map((client) =>
+          client.id === id
+            ? {
+                ...client,
+                razaoSocial: data.razaoSocial,
+                cnpj: data.cnpj,
+                endereco: data.endereco,
+                valorPago: data.valorPago,
+                recorrencia: data.recorrencia,
+                responsavel: data.responsavel,
+                contatoInterno: data.contatoInterno,
+              }
+            : client
+        );
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+      return;
+    }
+
     const { data: updated, error } = await supabase
       .from("clients")
       .update({

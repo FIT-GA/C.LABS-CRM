@@ -35,6 +35,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       vencimento: data.vencimento ?? 5,
       clientId: data.clientId,
       clientName: client?.razaoSocial,
+      payerType: data.payerType,
+      referenciaNome: data.referenciaNome || client?.razaoSocial,
       createdAt: new Date(),
     };
     setTransactions((prev) => [...prev, newTransaction]);

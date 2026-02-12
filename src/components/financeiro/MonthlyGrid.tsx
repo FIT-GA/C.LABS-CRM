@@ -107,7 +107,9 @@ export function MonthlyGrid({
                         >
                           <div>
                             <p className="text-foreground">{t.descricao}</p>
-                            <p className="text-xs text-muted-foreground">{t.categoria}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {t.referenciaNome || t.clientName || "—"} • {t.categoria}
+                            </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-green-400 font-medium">
@@ -154,7 +156,9 @@ export function MonthlyGrid({
                         >
                           <div>
                             <p className="text-foreground">{t.descricao}</p>
-                            <p className="text-xs text-muted-foreground">{t.categoria}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {t.referenciaNome || "—"} • {t.categoria}
+                            </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-red-400 font-medium">

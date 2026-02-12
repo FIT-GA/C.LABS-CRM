@@ -7,6 +7,8 @@ export interface Transaction {
   mes: number; // 1-12
   ano: number;
   vencimento?: number; // dia do mês (1-31). Default: 5
+  payerType?: "cliente" | "colaborador" | "outro";
+  referenciaNome?: string; // nome do cliente ou colaborador
   clientId?: string;
   clientName?: string;
   createdAt: Date;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -24,16 +24,35 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const transactionSchema = z.object({
-  tipo: z.enum(["entrada", "despesa"]),
-  descricao: z.string().trim().min(3, "Descrição deve ter no mínimo 3 caracteres"),
-  valor: z.number().positive("Valor deve ser maior que zero"),
-  categoria: z.string().min(1, "Selecione uma categoria"),
-  mes: z.number().min(1).max(12),
-  ano: z.number().min(2020).max(2030),
-  vencimento: z.number().min(1).max(31).default(5),
-  clientId: z.string().optional(),
-});
+const transactionSchema = z
+  .object({
+    tipo: z.enum(["entrada", "despesa"]),
+    descricao: z.string().trim().min(3, "Descrição deve ter no mínimo 3 caracteres"),
+    valor: z.number().positive("Valor deve ser maior que zero"),
+    categoria: z.string().min(1, "Selecione uma categoria"),
+    mes: z.number().min(1).max(12),
+    ano: z.number().min(2020).max(2030),
+    vencimento: z.number().min(1).max(31).default(5), // dia do pagamento
+    clientId: z.string().optional(),
+    payerType: z.enum(["cliente", "colaborador", "outro"]).optional(),
+    referenciaNome: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipo === "entrada" && !data.clientId && !(data.referenciaNome && data.referenciaNome.trim().length >= 2)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["referenciaNome"],
+        message: "Informe o cliente ou selecione da lista",
+      });
+    }
+    if (data.tipo === "despesa" && !(data.referenciaNome && data.referenciaNome.trim().length >= 2)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["referenciaNome"],
+        message: "Informe o colaborador",
+      });
+    }
+  });
 
 type TransactionSchemaType = z.infer<typeof transactionSchema>;
 
@@ -75,6 +94,8 @@ export function TransactionForm({
       ano: currentYear,
       vencimento: 5,
       clientId: "",
+      payerType: defaultTipo === "entrada" ? "cliente" : "colaborador",
+      referenciaNome: "",
     },
   });
 
@@ -92,6 +113,8 @@ export function TransactionForm({
         ano: currentYear,
         vencimento: 5,
         clientId: "",
+        payerType: defaultTipo === "entrada" ? "cliente" : "colaborador",
+        referenciaNome: "",
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -247,7 +270,7 @@ export function TransactionForm({
           <div className="grid grid-cols-2 gap-4">
             {/* Vencimento */}
             <div className="space-y-2">
-              <Label>Vencimento (dia)</Label>
+              <Label>Dia do pagamento</Label>
               <Input
                 id="vencimento"
                 type="number"
@@ -257,28 +280,49 @@ export function TransactionForm({
                 className="bg-secondary border-border"
               />
             </div>
+          </div>
 
-            {/* Cliente (opcional para entradas) */}
-            {tipo === "entrada" && (
-              <div className="space-y-2">
-                <Label>Cliente (opcional)</Label>
-                <Select
-                  value={watch("clientId") || ""}
-                  onValueChange={(value) => setValue("clientId", value)}
-                >
-                  <SelectTrigger className="bg-secondary border-border">
-                    <SelectValue placeholder="Vincular a cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.razaoSocial}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Cliente (opcional para entradas) */}
+          {tipo === "entrada" && (
+            <div className="space-y-2">
+              <Label>Cliente (opcional)</Label>
+              <Select
+                value={watch("clientId") || ""}
+                onValueChange={(value) => {
+                  setValue("clientId", value);
+                  setValue("referenciaNome", ""); // se escolher da lista, limpa texto
+                }}
+              >
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="Vincular a cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhum</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.razaoSocial}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Nome de referência */}
+          <div className="space-y-2">
+            <Label>
+              {tipo === "entrada"
+                ? "Nome do cliente (se não estiver na lista)"
+                : "Nome do colaborador"}
+            </Label>
+            <Input
+              id="referenciaNome"
+              placeholder={tipo === "entrada" ? "Cliente pagante" : "Colaborador"}
+              {...register("referenciaNome")}
+              className="bg-secondary border-border"
+            />
+            {errors.referenciaNome && (
+              <p className="text-sm text-destructive">{errors.referenciaNome.message}</p>
             )}
           </div>
 

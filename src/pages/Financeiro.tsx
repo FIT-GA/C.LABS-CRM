@@ -29,8 +29,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function Financeiro() {
   const { transactions, addTransaction, removeTransaction, getMonthlyTotals, totalEntradas, totalDespesas } = useTransactions();
   const { totalFaturamento } = useClients();
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formDefaults, setFormDefaults] = useState<{ mes?: number; tipo?: "entrada" | "despesa" }>({});
+  const [entradaModal, setEntradaModal] = useState<{ open: boolean; mes?: number }>({ open: false });
+  const [despesaModal, setDespesaModal] = useState<{ open: boolean; mes?: number }>({ open: false });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"entradas" | "despesas" | "visao">("entradas");
 
@@ -64,9 +64,9 @@ export default function Financeiro() {
   const saldoTotal = totalEntradasView - totalDespesasView;
 
   const handleAddTransaction = (mes?: number, tipo?: "entrada" | "despesa") => {
-    const chosenTipo = tipo || (tab === "entradas" ? "entrada" : tab === "despesas" ? "despesa" : undefined);
-    setFormDefaults({ mes, tipo: chosenTipo });
-    setIsFormOpen(true);
+    const chosenTipo = tipo || (tab === "despesas" ? "despesa" : "entrada");
+    if (chosenTipo === "despesa") setDespesaModal({ open: true, mes });
+    else setEntradaModal({ open: true, mes });
   };
 
   const handleSubmit = (data: TransactionFormData) => {
@@ -181,14 +181,18 @@ export default function Financeiro() {
 
         {/* Form Modal */}
         <TransactionForm
-          open={isFormOpen}
-          onClose={() => {
-            setIsFormOpen(false);
-            setFormDefaults({});
-          }}
+          open={entradaModal.open}
+          onClose={() => setEntradaModal({ open: false })}
           onSubmit={handleSubmit}
-          defaultMes={formDefaults.mes}
-          defaultTipo={formDefaults.tipo}
+          defaultMes={entradaModal.mes}
+          defaultTipo="entrada"
+        />
+        <TransactionForm
+          open={despesaModal.open}
+          onClose={() => setDespesaModal({ open: false })}
+          onSubmit={handleSubmit}
+          defaultMes={despesaModal.mes}
+          defaultTipo="despesa"
         />
       </div>
     </MainLayout>

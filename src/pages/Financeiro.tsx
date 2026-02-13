@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { TransactionForm } from "@/components/financeiro/TransactionForm";
 import { MonthlyGrid } from "@/components/financeiro/MonthlyGrid";
@@ -24,6 +24,7 @@ import {
   Legend,
 } from "recharts";
 import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Financeiro() {
   const { transactions, addTransaction, removeTransaction, getMonthlyTotals, totalEntradas, totalDespesas } = useTransactions();
@@ -31,19 +32,40 @@ export default function Financeiro() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formDefaults, setFormDefaults] = useState<{ mes?: number; tipo?: "entrada" | "despesa" }>({});
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [tab, setTab] = useState<"entradas" | "despesas" | "visao">("entradas");
 
-  const monthlyTotals = getMonthlyTotals(selectedYear);
-  const chartData = monthlyTotals.map((m) => ({
+  const filteredTransactions = useMemo(() => {
+    if (tab === "entradas") return transactions.filter((t) => t.tipo === "entrada");
+    if (tab === "despesas") return transactions.filter((t) => t.tipo === "despesa");
+    return transactions;
+  }, [transactions, tab]);
+
+  const monthlyTotalsFiltered = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const mes = i + 1;
+      const monthTransactions = filteredTransactions.filter((t) => t.mes === mes && t.ano === selectedYear);
+      return {
+        mes,
+        entradas: monthTransactions.filter((t) => t.tipo === "entrada").reduce((acc, t) => acc + t.valor, 0),
+        despesas: monthTransactions.filter((t) => t.tipo === "despesa").reduce((acc, t) => acc + t.valor, 0),
+      };
+    });
+  }, [filteredTransactions, selectedYear]);
+
+  const chartData = monthlyTotalsFiltered.map((m) => ({
     name: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][m.mes - 1],
     entradas: m.entradas,
     despesas: m.despesas,
     saldo: m.entradas - m.despesas,
   }));
 
-  const saldoTotal = totalEntradas - totalDespesas;
+  const totalEntradasView = filteredTransactions.filter((t) => t.tipo === "entrada").reduce((acc, t) => acc + t.valor, 0);
+  const totalDespesasView = filteredTransactions.filter((t) => t.tipo === "despesa").reduce((acc, t) => acc + t.valor, 0);
+  const saldoTotal = totalEntradasView - totalDespesasView;
 
   const handleAddTransaction = (mes?: number, tipo?: "entrada" | "despesa") => {
-    setFormDefaults({ mes, tipo });
+    const chosenTipo = tipo || (tab === "entradas" ? "entrada" : tab === "despesas" ? "despesa" : undefined);
+    setFormDefaults({ mes, tipo: chosenTipo });
     setIsFormOpen(true);
   };
 
@@ -76,7 +98,7 @@ export default function Financeiro() {
           </div>
         </div>
 
-        <Tabs defaultValue="entradas" className="space-y-6">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(parseInt(v))}>
               <SelectTrigger className="w-[120px] bg-card border-border">
@@ -182,7 +204,7 @@ export default function Financeiro() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Entradas</p>
-              <p className="text-2xl font-bold text-green-400">{formatCurrency(totalEntradas)}</p>
+              <p className="text-2xl font-bold text-green-400">{formatCurrency(totalEntradasView)}</p>
             </div>
           </div>
         </div>
@@ -194,7 +216,7 @@ export default function Financeiro() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Despesas</p>
-              <p className="text-2xl font-bold text-red-400">{formatCurrency(totalDespesas)}</p>
+              <p className="text-2xl font-bold text-red-400">{formatCurrency(totalDespesasView)}</p>
             </div>
           </div>
         </div>
@@ -255,7 +277,7 @@ export default function Financeiro() {
       <div className="p-6 rounded-xl bg-card border border-border card-glow">
         <h3 className="text-lg font-semibold text-primary mb-4">Visão Mensal - {selectedYear}</h3>
         <MonthlyGrid
-          transactions={transactions}
+          transactions={filteredTransactions}
           ano={selectedYear}
           onAddTransaction={handleAddTransaction}
           onRemoveTransaction={removeTransaction}

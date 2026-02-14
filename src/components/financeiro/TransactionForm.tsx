@@ -132,8 +132,8 @@ export function TransactionForm({
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
-          <div className="relative w-full max-w-[520px] rounded-lg bg-card border border-border shadow-lg p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-3 py-6 sm:px-4">
+          <div className="relative w-full max-w-[520px] sm:max-w-[560px] rounded-xl bg-card border border-border shadow-2xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
             <button
               type="button"
               onClick={handleClose}
@@ -155,7 +155,7 @@ export function TransactionForm({
                   className={cn(
                     "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
                     tipo === "entrada"
-                      ? "border-green-500 bg-green-500/10 text-green-400"
+                      ? "border-green-500 bg-green-500/15 text-green-100"
                       : "border-border bg-secondary text-muted-foreground hover:border-green-500/50"
                   )}
                 >
@@ -168,7 +168,7 @@ export function TransactionForm({
                   className={cn(
                     "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
                     tipo === "despesa"
-                      ? "border-red-500 bg-red-500/10 text-red-400"
+                      ? "border-red-500 bg-red-500/15 text-red-100"
                       : "border-border bg-secondary text-muted-foreground hover:border-red-500/50"
                   )}
                 >
@@ -337,7 +337,9 @@ export function TransactionForm({
                 <Button type="button" variant="outline" onClick={handleClose}>
                   Cancelar
                 </Button>
-                <Button type="submit">Registrar</Button>
+                <Button type="submit" className="min-w-[120px]">
+                  Registrar
+                </Button>
               </div>
             </form>
           </div>

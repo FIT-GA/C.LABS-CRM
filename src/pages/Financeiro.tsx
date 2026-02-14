@@ -69,8 +69,8 @@ export default function Financeiro() {
     else setEntradaModal({ open: true, mes });
   };
 
-  const handleSubmit = (data: TransactionFormData) => {
-    addTransaction(data);
+  const handleSubmit = async (data: TransactionFormData) => {
+    await addTransaction(data);
   };
 
   const formatCurrency = (value: number) => {

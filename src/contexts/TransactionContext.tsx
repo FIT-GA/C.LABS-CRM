@@ -42,30 +42,31 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      if (!user) {
-        setTransactions([]);
-        setLoading(false);
-        return;
-      }
+  const refresh = async () => {
+    setLoading(true);
+    if (!user) {
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const { data, error } = await supabase
-          .from("transactions")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (error) throw error;
-        setTransactions((data || []).map(mapRow));
-      } catch (err) {
-        console.error("Erro ao carregar transações", err);
-        setTransactions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    try {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setTransactions((data || []).map(mapRow));
+    } catch (err) {
+      console.error("Erro ao carregar transações", err);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clients.length, user]);
 
@@ -104,6 +105,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       const { data: inserted, error } = await supabase.from("transactions").insert(payload).select("*").single();
       if (error) throw error;
       setTransactions((prev) => [mapRow(inserted), ...prev]);
+      // garante sync com Supabase (ordem/valores)
+      refresh();
     } catch (err) {
       console.error("Erro ao salvar transação no Supabase", err);
       throw err;
@@ -116,6 +119,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("transactions").delete().eq("id", id);
       if (error) throw error;
       setTransactions((prev) => prev.filter((t) => t.id !== id));
+      refresh();
     } catch (err) {
       console.error("Erro ao remover transação", err);
       throw err;
@@ -148,6 +152,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       setTransactions((prev) => prev.map((t) => (t.id === id ? mapRow(updated) : t)));
+      refresh();
     } catch (err) {
       console.error("Erro ao atualizar transação", err);
       throw err;

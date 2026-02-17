@@ -25,10 +25,12 @@ import {
 } from "recharts";
 import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Financeiro() {
   const { transactions, addTransaction, removeTransaction, getMonthlyTotals, totalEntradas, totalDespesas } = useTransactions();
   const { totalFaturamento } = useClients();
+  const { toast } = useToast();
   const [entradaModal, setEntradaModal] = useState<{ open: boolean; mes?: number }>({ open: false });
   const [despesaModal, setDespesaModal] = useState<{ open: boolean; mes?: number }>({ open: false });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -70,7 +72,16 @@ export default function Financeiro() {
   };
 
   const handleSubmit = async (data: TransactionFormData) => {
-    await addTransaction(data);
+    try {
+      await addTransaction(data);
+      toast({ title: "Transação registrada", description: data.descricao });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: err?.message || "Não foi possível registrar. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatCurrency = (value: number) => {

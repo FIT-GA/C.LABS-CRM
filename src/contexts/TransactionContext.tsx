@@ -130,8 +130,13 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       setTransactions((prev) => [mapRow(inserted), ...prev]);
     } catch (err) {
-      console.error("Erro ao salvar transação", err);
-      throw err;
+      console.error("Erro ao salvar transação no Supabase, salvando localmente", err);
+      // fallback local para não perder a transação
+      setTransactions((prev) => {
+        const next = [base, ...prev];
+        persistLocal(next);
+        return next;
+      });
     }
   };
 

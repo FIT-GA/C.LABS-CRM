@@ -4,9 +4,8 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TopClientsChart } from "@/components/dashboard/TopClientsChart";
 import { RevenueGoalCard } from "@/components/dashboard/RevenueGoalCard";
 import { useClients } from "@/contexts/ClientContext";
-import { DollarSign, CreditCard, TrendingUp, Clock, ExternalLink } from "lucide-react";
+import { DollarSign, CreditCard, TrendingUp, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { clients, totalFaturamento } = useClients();
@@ -63,23 +62,6 @@ const Index = () => {
   return (
     <MainLayout totalCaixa={metricsData.faturamento}>
       <div className="space-y-6 animate-fade-in">
-        {/* Acesso rápido CORPS LAB */}
-        <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Nova agência isolada</p>
-            <p className="text-lg font-semibold text-primary">Acessar CORPS LAB (PWA)</p>
-            <p className="text-xs text-muted-foreground">
-              Ambiente dedicado com paleta laranja, rodando em /CRMCORPS/.
-            </p>
-          </div>
-          <Button asChild className="gap-2">
-            <a href="https://corps-lab.github.io/CRMCORPS/" target="_blank" rel="noreferrer">
-              Abrir CORPS LAB
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </Button>
-        </div>
-
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <MetricCard

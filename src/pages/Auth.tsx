@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import logoImage from "@/assets/logo.png";
-import { Mail, Lock, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { AgencySwitcher } from "@/components/agency/AgencySwitcher";
 
 export default function Auth() {
@@ -160,18 +160,6 @@ export default function Auth() {
             A criação de usuários é feita somente no dashboard do ADM. Se não tiver acesso, abra um chamado interno.
           </p>
 
-          <div className="border border-border rounded-lg p-3 bg-secondary/40 space-y-2">
-            <div className="text-sm text-white font-semibold">CORPS LAB (PWA)</div>
-            <p className="text-xs text-muted-foreground leading-snug">
-              App laranja isolado. Acesse pelo atalho abaixo.
-            </p>
-            <Button asChild variant="outline" className="w-full gap-2">
-              <a href="https://corps-lab.github.io/CRMCORPS/" target="_blank" rel="noreferrer">
-                Abrir CORPS LAB
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

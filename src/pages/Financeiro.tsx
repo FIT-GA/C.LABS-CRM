@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { TransactionForm } from "@/components/financeiro/TransactionForm";
 import { MonthlyGrid } from "@/components/financeiro/MonthlyGrid";
@@ -6,6 +6,7 @@ import { useTransactions } from "@/contexts/TransactionContext";
 import { useClients } from "@/contexts/ClientContext";
 import { TransactionFormData } from "@/types/transaction";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -25,16 +26,24 @@ import {
 } from "recharts";
 import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Financeiro() {
   const { transactions, addTransaction, removeTransaction, getMonthlyTotals, totalEntradas, totalDespesas } = useTransactions();
   const { totalFaturamento } = useClients();
-  const { toast } = useToast();
+  const location = useLocation();
   const [entradaModal, setEntradaModal] = useState<{ open: boolean; mes?: number }>({ open: false });
   const [despesaModal, setDespesaModal] = useState<{ open: boolean; mes?: number }>({ open: false });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"entradas" | "despesas" | "visao">("entradas");
+
+  // Ajusta aba inicial conforme rota acessada (/entradas ou /despesas)
+  useEffect(() => {
+    if (location.pathname.includes("despesa")) {
+      setTab("despesas");
+    } else if (location.pathname.includes("entrada")) {
+      setTab("entradas");
+    }
+  }, [location.pathname]);
 
   const filteredTransactions = useMemo(() => {
     if (tab === "entradas") return transactions.filter((t) => t.tipo === "entrada");
@@ -72,16 +81,7 @@ export default function Financeiro() {
   };
 
   const handleSubmit = async (data: TransactionFormData) => {
-    try {
-      await addTransaction(data);
-      toast({ title: "Transação registrada", description: data.descricao });
-    } catch (err: any) {
-      toast({
-        title: "Erro ao salvar",
-        description: err?.message || "Não foi possível registrar. Tente novamente.",
-        variant: "destructive",
-      });
-    }
+    await addTransaction(data);
   };
 
   const formatCurrency = (value: number) => {

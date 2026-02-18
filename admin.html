@@ -3,32 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRM C.LABS • Dashboard ADM/CEO</title>
+  <title>CRM C.LABS • Painel ADM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/favicon-32.png" sizes="32x32">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
   <style>
     :root {
-      --bg: #050505;
-      --panel: rgba(255,255,255,0.03);
+      --bg: #040404;
+      --panel: #0a0a0a;
+      --panel-strong: linear-gradient(135deg, rgba(199,243,29,0.08), rgba(199,243,29,0.02));
       --stroke: rgba(255,255,255,0.08);
-      --text: #f5f5f5;
-      --muted: #b3b3b3;
-      --accent: #ffffff;
-      --accent-strong: #8b5cf6;
-      --accent-soft: rgba(139, 92, 246, 0.16);
-      --shadow: 0 18px 48px rgba(0,0,0,0.35);
+      --stroke-strong: rgba(199,243,29,0.28);
+      --text: #f8f8f8;
+      --muted: #9ea0a3;
+      --accent: #c7f31d;
+      --accent-strong: #d7ff3a;
+      --accent-soft: rgba(199,243,29,0.16);
+      --shadow: 0 20px 60px rgba(0,0,0,0.45);
       --radius-lg: 18px;
       --radius-md: 14px;
       --radius-sm: 10px;
       --gap: 16px;
-      --gap-lg: 20px;
+      --gap-lg: 22px;
+      --glow: 0 0 0 1px rgba(199,243,29,0.08), 0 25px 70px rgba(199,243,29,0.12);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Space Grotesk','Sora',system-ui,-apple-system,sans-serif;
-      background: radial-gradient(circle at 20% 15%, rgba(255,255,255,0.05), transparent 30%), linear-gradient(150deg, #030303, #0b0b0b);
+      background:
+        radial-gradient(circle at 20% 15%, rgba(199,243,29,0.08), transparent 32%),
+        radial-gradient(circle at 80% 0%, rgba(199,243,29,0.06), transparent 38%),
+        linear-gradient(160deg, #020202, #0a0a0a 45%, #050505);
       color: var(--text);
       display: grid;
       grid-template-columns: 260px 1fr;
@@ -36,7 +45,7 @@
       overflow-x: hidden;
     }
     aside {
-      background: #070707;
+      background: #050505;
       border-right: 1px solid var(--stroke);
       display: flex;
       flex-direction: column;
@@ -49,13 +58,13 @@
       gap: 12px;
       padding: 10px 12px;
     }
-    .logo-block img { width: 52px; height: auto; }
+    .logo-block img { width: 54px; height: auto; filter: drop-shadow(0 8px 18px rgba(199,243,29,0.25)); }
     .logo-block .brand {
       display: flex;
       flex-direction: column;
       line-height: 1.1;
     }
-    .brand .title { font-weight: 700; letter-spacing: 0.01em; }
+    .brand .title { font-weight: 700; letter-spacing: 0.02em; font-size: 18px; }
     .brand .subtitle { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
     nav ul {
       list-style: none;
@@ -72,14 +81,16 @@
       border-radius: var(--radius-md);
       color: var(--muted);
       cursor: pointer;
-      transition: background 160ms ease, color 160ms ease;
+      transition: background 160ms ease, color 160ms ease, border 160ms ease;
+      border: 1px solid transparent;
     }
     nav li.active {
       background: var(--accent-soft);
       color: var(--text);
-      border: 1px solid rgba(139, 92, 246, 0.55);
+      border-color: var(--stroke-strong);
+      box-shadow: var(--glow);
     }
-    nav li:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    nav li:hover { background: rgba(255,255,255,0.05); color: var(--text); }
     nav i {
       font-size: 18px;
       display: inline-flex;
@@ -88,14 +99,16 @@
       width: 20px;
       height: 20px;
       line-height: 1;
+      color: var(--accent);
     }
     .badge-new {
       margin-left: auto;
-      background: var(--accent-soft);
-      color: var(--text);
+      background: var(--accent);
+      color: #111;
       padding: 4px 8px;
       border-radius: 999px;
       font-size: 11px;
+      font-weight: 700;
       letter-spacing: 0.04em;
     }
     .bottom-links {
@@ -110,7 +123,10 @@
       padding: 12px 14px;
       border-radius: var(--radius-md);
       color: var(--muted);
+      border: 1px solid transparent;
+      transition: 150ms ease;
     }
+    .bottom-links .item:hover { color: var(--text); background: rgba(255,255,255,0.04); border-color: var(--stroke); }
     .bottom-links i {
       display: inline-flex;
       align-items: center;
@@ -118,6 +134,7 @@
       width: 20px;
       height: 20px;
       line-height: 1;
+      color: var(--accent);
     }
     main {
       padding: 20px 26px 28px;
@@ -133,15 +150,16 @@
     }
     .topbar .pill {
       background: var(--panel);
-      border: 1px solid rgba(124, 58, 237, 0.35);
+      border: 1px solid var(--stroke-strong);
       border-radius: var(--radius-md);
       padding: 14px 16px;
       display: grid;
       gap: 4px;
       min-width: 240px;
+      box-shadow: var(--glow);
     }
     .pill label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
-    .pill .value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+    .pill .value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--accent-strong); }
     .period {
       margin-left: auto;
       display: inline-flex;
@@ -167,7 +185,26 @@
       box-shadow: var(--shadow);
       display: grid;
       gap: 10px;
+      position: relative;
+      overflow: hidden;
     }
+    .card.primary {
+      border-color: var(--stroke-strong);
+      background: var(--panel-strong);
+      box-shadow: var(--glow);
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid transparent;
+      background: linear-gradient(135deg, rgba(199,243,29,0.18), transparent 35%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+    .card:hover::after { opacity: 1; }
     .card .label {
       display: flex;
       align-items: center;
@@ -177,13 +214,13 @@
       letter-spacing: 0.02em;
       text-transform: uppercase;
     }
-    .card .value { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+    .card .value { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
     .card i {
       width: 34px; height: 34px;
       display: grid; place-items: center;
       border-radius: 10px;
       background: var(--accent-soft);
-      color: var(--text);
+      color: #0b0b0b;
       font-size: 18px;
       line-height: 1;
     }
@@ -216,53 +253,34 @@
       position: relative;
       overflow: hidden;
     }
-    .chart-wrap svg {
-      width: 100%;
-      height: 100%;
-    }
+    .chart-wrap svg { width: 100%; height: 100%; }
     .chart-line {
       stroke-linecap: round;
       stroke-linejoin: round;
       stroke-dasharray: var(--path-length, 0);
       stroke-dashoffset: var(--path-length, 0);
-      filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.35));
+      filter: drop-shadow(0 0 12px rgba(199,243,29,0.35));
     }
-    .chart-area {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    .chart-dot {
-      opacity: 0;
-      transform: scale(0.35);
-      transform-origin: center;
-    }
+    .chart-area { opacity: 0; transform: translateY(10px); }
+    .chart-dot { opacity: 0; transform: scale(0.35); transform-origin: center; }
     .animate-line { animation: drawLine 1.8s cubic-bezier(0.25, 0.95, 0.4, 1) forwards; }
     .animate-area { animation: revealArea 1s ease-out forwards 0.65s; }
     .animate-dot { animation: popDot 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; animation-delay: var(--delay, 0s); }
-    @keyframes drawLine {
-      from { stroke-dashoffset: var(--path-length, 0); }
-      to { stroke-dashoffset: 0; }
-    }
-    @keyframes revealArea {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 0.82; transform: translateY(0); }
-    }
-    @keyframes popDot {
-      0% { opacity: 0; transform: scale(0.2); }
-      60% { opacity: 1; transform: scale(1.18); }
-      100% { opacity: 1; transform: scale(1); }
-    }
+    @keyframes drawLine { from { stroke-dashoffset: var(--path-length, 0); } to { stroke-dashoffset: 0; } }
+    @keyframes revealArea { from { opacity: 0; transform: translateY(10px); } to { opacity: 0.9; transform: translateY(0); } }
+    @keyframes popDot { 0% { opacity: 0; transform: scale(0.2); } 60% { opacity: 1; transform: scale(1.18); } 100% { opacity: 1; transform: scale(1); } }
     .progress {
       background: rgba(255,255,255,0.06);
       border-radius: 999px;
       height: 10px;
       overflow: hidden;
-      border: 1px solid rgba(139, 92, 246, 0.4);
+      border: 1px solid var(--stroke-strong);
     }
     .progress .bar {
       height: 100%;
       width: 100%;
-      background: linear-gradient(90deg, #c3a3ff, var(--accent-strong));
+      background: linear-gradient(90deg, #d7ff3a, var(--accent));
+      box-shadow: var(--glow);
     }
     .kpi-row {
       display: grid;
@@ -272,7 +290,33 @@
       font-size: 13px;
     }
     .kpi-row strong { display: block; color: var(--text); margin-top: 2px; }
-    .big-number { color: var(--accent-strong); }
+    .big-number { color: var(--accent); }
+    .banner {
+      background: linear-gradient(135deg, rgba(199,243,29,0.18), rgba(199,243,29,0.05));
+      border: 1px solid var(--stroke-strong);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--glow);
+    }
+    .banner i { color: #0b0b0b; background: var(--accent); border-radius: 10px; padding: 10px; font-size: 18px; }
+    .banner .title { font-weight: 700; letter-spacing: 0.01em; }
+    .banner .desc { color: var(--muted); }
+    .badge-ceo {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke-strong);
+      background: rgba(199,243,29,0.08);
+      color: var(--text);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
     @media (max-width: 980px) {
       body { grid-template-columns: 1fr; }
       aside { flex-direction: row; overflow-x: auto; align-items: flex-start; }
@@ -284,24 +328,17 @@
     @media (max-width: 640px) {
       .cards { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
       .chart-wrap { height: 220px; }
-      .logo-block img { width: 42px; }
+      .logo-block img { width: 44px; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .chart-line,
-      .chart-area,
-      .chart-dot {
-        animation: none !important;
-        stroke-dashoffset: 0 !important;
-        opacity: 1 !important;
-        transform: none !important;
-      }
+      .chart-line, .chart-area, .chart-dot { animation: none !important; stroke-dashoffset: 0 !important; opacity: 1 !important; transform: none !important; }
     }
   </style>
 </head>
 <body>
   <aside>
     <div class="logo-block">
-      <img src="assets/logo-95 2_.png" alt="Logo">
+      <img src="assets/logo-95-transparent.png" alt="Logo">
       <div class="brand">
         <span class="title">C.LABS</span>
         <span class="subtitle">Painel ADM</span>
@@ -312,7 +349,7 @@
         <li class="active"><i class="fi fi-rr-home"></i>Dashboard</li>
         <li><i class="fi fi-rr-users"></i>Clientes</li>
         <li><i class="fi fi-rr-file-text"></i>Contratos</li>
-        <li><i class="fi fi-rr-trend-up"></i>Entradas</li>
+        <li><i class="fi fi-rr-trend-down"></i>Entradas</li>
         <li><i class="fi fi-rr-credit-card"></i>Despesas</li>
         <li><i class="fi fi-rr-clipboard-list-check"></i>Tarefas <span class="badge-new">NOVO</span></li>
         <li><i class="fi fi-rr-comment-dots"></i>Sugestões</li>
@@ -332,11 +369,20 @@
         <label>Caixa total da empresa</label>
         <div class="value">R$ 42.804,87</div>
       </div>
+      <div class="badge-ceo">CEO view em tempo real</div>
       <div class="period"><i class="fi fi-rr-calendar"></i> Selecionar período</div>
     </div>
 
+    <div class="banner">
+      <i class="fi fi-rr-bell"></i>
+      <div>
+        <div class="title">Atualização visual concluída</div>
+        <div class="desc">Este painel está alinhado ao layout novo (tema lima/escuro). Todos os atalhos permanecem iguais.</div>
+      </div>
+    </div>
+
     <div class="cards">
-      <div class="card">
+      <div class="card primary">
         <div class="label"><i class="fi fi-rr-coins"></i>Faturamento</div>
         <div class="value">R$ 42.804,87</div>
       </div>
@@ -367,14 +413,14 @@
           <svg viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
               <linearGradient id="fade" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.4"/>
-                <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+                <stop offset="0%" stop-color="#c7f31d" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#c7f31d" stop-opacity="0"/>
               </linearGradient>
             </defs>
-            <path class="chart-line" d="M5 65 Q18 55 30 50 T55 43 T80 41 T95 40" fill="none" stroke="var(--accent-strong)" stroke-width="1.2"/>
+            <path class="chart-line" d="M5 65 Q18 55 30 50 T55 43 T80 41 T95 40" fill="none" stroke="#c7f31d" stroke-width="1.3"/>
             <path class="chart-area" d="M5 65 Q18 55 30 50 T55 43 T80 41 T95 40 L95 100 L5 100 Z" fill="url(#fade)"/>
-            <g fill="var(--accent-strong)">
-              <circle class="chart-dot" cx="5" cy="65" r="1.3"/><circle class="chart-dot" cx="18" cy="55" r="1.3"/><circle class="chart-dot" cx="30" cy="50" r="1.3"/><circle class="chart-dot" cx="43" cy="46" r="1.3"/><circle class="chart-dot" cx="55" cy="43" r="1.3"/><circle class="chart-dot" cx="68" cy="42" r="1.3"/><circle class="chart-dot" cx="80" cy="41" r="1.3"/><circle class="chart-dot" cx="95" cy="40" r="1.3"/>
+            <g fill="#c7f31d">
+              <circle class="chart-dot" cx="5" cy="65" r="1.4"/><circle class="chart-dot" cx="18" cy="55" r="1.4"/><circle class="chart-dot" cx="30" cy="50" r="1.4"/><circle class="chart-dot" cx="43" cy="46" r="1.4"/><circle class="chart-dot" cx="55" cy="43" r="1.4"/><circle class="chart-dot" cx="68" cy="42" r="1.4"/><circle class="chart-dot" cx="80" cy="41" r="1.4"/><circle class="chart-dot" cx="95" cy="40" r="1.4"/>
             </g>
           </svg>
         </div>
@@ -408,7 +454,6 @@
         line.style.strokeDashoffset = length;
 
         if (!prefersReduced) {
-          // ensure browser registers dash values before animating
           void line.getBoundingClientRect();
           line.classList.add('animate-line');
         } else {
@@ -420,7 +465,7 @@
         if (!prefersReduced) {
           area.classList.add('animate-area');
         } else {
-          area.style.opacity = 0.82;
+          area.style.opacity = 0.9;
           area.style.transform = 'none';
         }
       }

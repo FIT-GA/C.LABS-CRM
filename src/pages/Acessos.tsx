@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAgency } from "@/contexts/AgencyContext";
 import { toast } from "sonner";
 
 export default function Acessos() {
   const { signUp } = useAuth();
+  const { currentAgency, isIsolated } = useAgency();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [cpf, setCpf] = useState("");
@@ -45,6 +47,10 @@ export default function Acessos() {
       <Card className="border border-primary/30">
         <CardHeader>
           <CardTitle className="text-lg">Criar acesso de colaborador</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Agência atual: <span className="text-foreground font-medium">{currentAgency.name}</span>
+            {isIsolated ? " (dados isolados deste CRM)" : ""}
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">

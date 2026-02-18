@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { Client, ClientFormData } from "@/types/client";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
+import { useAgency } from "./AgencyContext";
 
 interface ClientContextType {
   clients: Client[];
@@ -18,14 +19,15 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const storageKey = "crm_mock_clients";
+  const { isIsolated, currentAgency } = useAgency();
+  const storageKey = useMemo(() => `crm_${currentAgency.id}_clients`, [currentAgency.id]);
 
   // Carrega clientes do Supabase
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      // Modo mock: usuário não autenticado → usar storage local
-      if (!user) {
+      // Modo isolado ou sem login → usar storage local separado por agência
+      if (!user || isIsolated) {
         try {
           const raw = localStorage.getItem(storageKey);
           const parsed: Client[] = raw ? JSON.parse(raw) : [];
@@ -65,11 +67,11 @@ export function ClientProvider({ children }: { children: ReactNode }) {
       }
     };
     load();
-  }, [user]);
+  }, [user, isIsolated, storageKey]);
 
   const addClient = async (data: ClientFormData) => {
     // Modo mock: apenas grava localmente
-    if (!user) {
+    if (!user || isIsolated) {
       const newClient: Client = {
         id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
         razaoSocial: data.razaoSocial,
@@ -118,7 +120,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   };
 
   const removeClient = async (id: string) => {
-    if (!user) {
+    if (!user || isIsolated) {
       setClients((prev) => {
         const next = prev.filter((client) => client.id !== id);
         localStorage.setItem(storageKey, JSON.stringify(next));
@@ -132,7 +134,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   };
 
   const updateClient = async (id: string, data: ClientFormData) => {
-    if (!user) {
+    if (!user || isIsolated) {
       setClients((prev) => {
         const next = prev.map((client) =>
           client.id === id

@@ -5,24 +5,29 @@ type ProgressRingProps = {
   progress: number; // 0-100
   size?: number;
   strokeWidth?: number;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "success";
   children?: React.ReactNode;
   className?: string;
 };
 
 export const ProgressRing: React.FC<ProgressRingProps> = ({
   progress,
-  size = 72,
-  strokeWidth = 6,
-  variant = "primary",
-  children,
+  size = 120,
+  strokeWidth = 8,
   className,
+  children,
+  variant = "primary",
 }) => {
   const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const clamped = Math.max(0, Math.min(100, progress || 0));
+  const circumference = radius * 2 * Math.PI;
+  const clamped = Math.max(0, Math.min(100, progress ?? 0));
   const offset = circumference - (clamped / 100) * circumference;
-  const color = variant === "secondary" ? "var(--secondary)" : "hsl(var(--primary))";
+
+  const colorMap: Record<NonNullable<ProgressRingProps["variant"]>, string> = {
+    primary: "hsl(var(--primary))",
+    secondary: "hsl(var(--secondary))",
+    success: "hsl(var(--success, var(--primary)))",
+  };
 
   return (
     <div className={cn("relative inline-flex items-center justify-center", className)} style={{ width: size, height: size }}>
@@ -31,24 +36,25 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
+          fill="none"
           stroke="hsl(var(--muted-foreground))"
           strokeWidth={strokeWidth}
-          fill="transparent"
           strokeOpacity={0.18}
         />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={color}
+          fill="none"
           strokeWidth={strokeWidth}
-          fill="transparent"
+          strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          strokeLinecap="round"
+          stroke={colorMap[variant] || colorMap.primary}
+          className="transition-[stroke-dashoffset] duration-500 ease-out"
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-foreground text-sm font-semibold">{children}</div>
+      {children && <div className="absolute inset-0 flex items-center justify-center">{children}</div>}
     </div>
   );
 };

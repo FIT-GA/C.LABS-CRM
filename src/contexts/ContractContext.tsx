@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Contract } from "@/types/contract";
 import { ContractSchemaType } from "@/lib/contract-validations";
 import { useClients } from "./ClientContext";
 import { safeId } from "@/lib/safeId";
+import { useAgency } from "./AgencyContext";
 
 interface ContractContextType {
   contracts: Contract[];
@@ -17,6 +18,12 @@ const ContractContext = createContext<ContractContextType | undefined>(undefined
 export function ContractProvider({ children }: { children: ReactNode }) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const { clients } = useClients();
+  const { currentAgency } = useAgency();
+
+  useEffect(() => {
+    // zera contratos ao trocar de agência para evitar vazamento de dados
+    setContracts([]);
+  }, [currentAgency.id]);
 
   const addContract = (data: ContractSchemaType) => {
     const client = clients.find((c) => c.id === data.clientId);

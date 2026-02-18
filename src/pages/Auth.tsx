@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAgency } from "@/contexts/AgencyContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import logoImage from "@/assets/logo.png";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { AgencySwitcher } from "@/components/agency/AgencySwitcher";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,7 +22,9 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { signIn, signUp, user } = useAuth();
+  const { currentAgency, isIsolated } = useAgency();
   const navigate = useNavigate();
+  const emailPlaceholder = currentAgency.id === "clabs" ? "squad@clabs.ag" : "ceo@agenciaceu.ag";
 
   // If already logged in, redirect
   if (user) {
@@ -63,9 +67,9 @@ export default function Auth() {
         className="absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.16), transparent 32%)," +
-            "radial-gradient(circle at 80% 10%, rgba(124, 58, 237, 0.22), transparent 30%)," +
-            "linear-gradient(140deg, #050505, #0d0d12)",
+            "radial-gradient(circle at 20% 20%, var(--auth-glow-1), transparent 32%)," +
+            "radial-gradient(circle at 80% 10%, var(--auth-glow-2), transparent 30%)," +
+            "linear-gradient(140deg, var(--auth-bg-1), var(--auth-bg-2))",
         }}
       />
 
@@ -76,11 +80,12 @@ export default function Auth() {
           </div>
           <CardTitle className="text-2xl text-white">Acesso seguro</CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
-            Acesso liberado pelo ADM do CRM. Use seu e-mail corporativo.
+            Selecione a agência para entrar. O ambiente “Agência Céu” é isolado e começa zerado.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
+          <AgencySwitcher />
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm text-white">E-mail</Label>
@@ -93,7 +98,7 @@ export default function Auth() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="squad@clabs.ag"
+                  placeholder={emailPlaceholder}
                   required
                   className="h-12 pl-12 pr-4 text-base bg-black/40 border-primary/40 focus-visible:ring-primary"
                 />
@@ -141,6 +146,12 @@ export default function Auth() {
             </Button>
           </form>
 
+          {isIsolated && (
+            <div className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs text-primary">
+              Ambiente isolado: acesso inicial CEO {`ceo@${currentAgency.id}.ag`} / azul123. Você pode criar novos acessos em “Acessos”.
+            </div>
+          )}
+
           <div className="text-sm text-muted-foreground">
             Precisa de ajuda? <a className="font-semibold underline" href="mailto:suporte@clabs.ag">suporte@clabs.ag</a>
           </div>
@@ -148,6 +159,19 @@ export default function Auth() {
           <p className="text-xs text-muted-foreground leading-relaxed">
             A criação de usuários é feita somente no dashboard do ADM. Se não tiver acesso, abra um chamado interno.
           </p>
+
+          <div className="border border-border rounded-lg p-3 bg-secondary/40 space-y-2">
+            <div className="text-sm text-white font-semibold">CORPS LAB (PWA)</div>
+            <p className="text-xs text-muted-foreground leading-snug">
+              App laranja isolado. Acesse pelo atalho abaixo.
+            </p>
+            <Button asChild variant="outline" className="w-full gap-2">
+              <a href="https://corps-lab.github.io/CRMCORPS/" target="_blank" rel="noreferrer">
+                Abrir CORPS LAB
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

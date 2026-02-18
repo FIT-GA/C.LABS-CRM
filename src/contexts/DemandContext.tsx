@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { Demand, DemandFormData, DemandStatus } from "@/types/demand";
 import { useClients } from "./ClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { safeId } from "@/lib/safeId";
+import { useAgency } from "./AgencyContext";
 
 interface DemandContextType {
   demands: Demand[];
@@ -26,34 +27,41 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { clients } = useClients();
   const { user } = useAuth();
-  const storageKey = "crm_mock_demands";
+  const { isIsolated, currentAgency } = useAgency();
+  const storageKey = useMemo(() => `crm_${currentAgency.id}_demands`, [currentAgency.id]);
 
-  const mapDemand = (row: any): Demand => {
-    const clientName = clients.find((c) => c.id === row.client_id)?.razaoSocial || row.client_name || "Cliente não encontrado";
+  const mapDemand = (row: Record<string, unknown>): Demand => {
+    const clientId = typeof row.client_id === "string" ? row.client_id : "";
+    const clientName =
+      clients.find((c) => c.id === clientId)?.razaoSocial ||
+      (typeof row.client_name === "string" ? row.client_name : "Cliente não encontrado");
+    const rawTasks = (row as { demand_tasks?: unknown }).demand_tasks;
+    const tasksRaw = Array.isArray(rawTasks) ? rawTasks : [];
+    const tarefas =
+      tasksRaw?.map((t: Record<string, unknown>) => ({
+        id: String(t.id),
+        titulo: (t.titulo as string) || "",
+        concluida: Boolean(t.concluida),
+      })) || [];
     return {
-      id: row.id,
-      clientId: row.client_id || "",
+      id: String(row.id),
+      clientId,
       clientName,
-      demanda: row.demanda,
-      descricao: row.descricao || "",
-      dataPedido: new Date(row.data_pedido),
-      dataEntrega: new Date(row.data_entrega),
-      responsavel: row.responsavel || "",
-      status: row.status,
-      prioridade: row.prioridade,
-      tarefas:
-        row.demand_tasks?.map((t: any) => ({
-          id: t.id,
-          titulo: t.titulo,
-          concluida: t.concluida,
-        })) || [],
-      createdAt: new Date(row.created_at),
+      demanda: (row.demanda as string) || "",
+      descricao: (row.descricao as string) || "",
+      dataPedido: row.data_pedido ? new Date(row.data_pedido as string) : new Date(),
+      dataEntrega: row.data_entrega ? new Date(row.data_entrega as string) : new Date(),
+      responsavel: (row.responsavel as string) || "",
+      status: (row.status as DemandStatus) || "em-andamento",
+      prioridade: (row.prioridade as Demand["prioridade"]) || "media",
+      tarefas,
+      createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
     };
   };
 
   const fetchDemands = async () => {
     setLoading(true);
-    if (!user) {
+    if (!user || isIsolated) {
       try {
         const raw = localStorage.getItem(storageKey);
         const parsed: Demand[] = raw ? JSON.parse(raw) : [];
@@ -85,10 +93,10 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchDemands();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clients.length]);
+  }, [clients.length, isIsolated, storageKey]);
 
   const addDemand = async (data: DemandFormData) => {
-    if (!user) {
+    if (!user || isIsolated) {
       const newDemand: Demand = {
         id: safeId("demand"),
         clientId: data.clientId || "",
@@ -149,7 +157,7 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   };
 
   const removeDemand = async (id: string) => {
-    if (!user) {
+    if (!user || isIsolated) {
       setDemands((prev) => {
         const next = prev.filter((d) => d.id !== id);
         localStorage.setItem(storageKey, JSON.stringify(next));
@@ -168,7 +176,7 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   };
 
   const updateDemand = async (id: string, data: Partial<DemandFormData>) => {
-    if (!user) {
+    if (!user || isIsolated) {
       setDemands((prev) => {
         const next = prev.map((d) =>
           d.id === id
@@ -188,7 +196,7 @@ export function DemandProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      const payload: any = {};
+      const payload: Record<string, unknown> = {};
       if (data.clientId !== undefined) payload.client_id = data.clientId || null;
       if (data.demanda !== undefined) payload.demanda = data.demanda;
       if (data.descricao !== undefined) payload.descricao = data.descricao;
@@ -226,7 +234,7 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleTask = async (demandId: string, taskId: string) => {
-    if (!user) {
+    if (!user || isIsolated) {
       setDemands((prev) => {
         const next = prev.map((d) =>
           d.id === demandId
@@ -261,7 +269,7 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   };
 
   const addTask = async (demandId: string, titulo: string) => {
-    if (!user) {
+    if (!user || isIsolated) {
       const newTask = { id: safeId("task"), titulo, concluida: false };
       setDemands((prev) =>
         prev.map((d) =>

@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeId } from "@/lib/safeId";
+import { useAgency } from "./AgencyContext";
 
 
 const mockUsers = [
@@ -11,6 +12,18 @@ const mockUsers = [
 ];
 
 type AppRole = "admin" | "colaborador" | "ceo";
+type LocalUserRecord = {
+  id: string;
+  email: string;
+  password: string;
+  nome: string;
+  role: AppRole;
+  telefone?: string | null;
+  cpf?: string | null;
+  cargo?: string | null;
+};
+
+type LocalSessionRecord = { userId: string; email: string; nome: string; role: AppRole };
 
 interface Profile {
   id: string;
@@ -43,17 +56,93 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Só usa modo mock se for explicitamente habilitado. Em produção (Pages) usamos sempre Supabase,
 // mesmo que as variáveis não estejam presentes em tempo de build (há fallback hardcoded no client).
-const useMockAuth = () => import.meta.env.VITE_USE_MOCK_AUTH === "true";
+const isMockAuthEnabled = () => import.meta.env.VITE_USE_MOCK_AUTH === "true";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { currentAgency, isIsolated } = useAgency();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [role, setRole] = useState<AppRole | null>("ceo");
+  const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const localUsersKey = useMemo(() => `crm_${currentAgency.id}_users`, [currentAgency.id]);
+  const localSessionKey = useMemo(() => `crm_${currentAgency.id}_session`, [currentAgency.id]);
+
+  const loadLocalUsers = (): LocalUserRecord[] => {
+    try {
+      const raw = localStorage.getItem(localUsersKey);
+      return raw ? (JSON.parse(raw) as LocalUserRecord[]) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const persistLocalUsers = (users: LocalUserRecord[]) => {
+    try {
+      localStorage.setItem(localUsersKey, JSON.stringify(users));
+    } catch {
+      /* ignore storage failure */
+    }
+  };
+
+  const ensureDefaultCeo = () => {
+    if (!isIsolated) return;
+    const users = loadLocalUsers();
+    if (users.some((u) => u.role === "ceo")) return;
+    const seedUser = {
+      id: safeId("user"),
+      email: `ceo@${currentAgency.id}.ag`,
+      password: "azul123",
+      nome: `CEO ${currentAgency.name}`,
+      role: "ceo" as AppRole,
+      cpf: null,
+      cargo: "CEO",
+    };
+    persistLocalUsers([...users, seedUser]);
+  };
+
+  const loadLocalSession = (): LocalSessionRecord | null => {
+    try {
+      const raw = localStorage.getItem(localSessionKey);
+      return raw ? (JSON.parse(raw) as LocalSessionRecord) : null;
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
-    // Set up auth state listener FIRST
+    if (isIsolated) {
+      ensureDefaultCeo();
+      const stored = loadLocalSession();
+      if (stored) {
+        const localUser = { id: stored.userId, email: stored.email, user_metadata: { name: stored.nome } } as unknown as User;
+        setUser(localUser);
+        setSession(null);
+        setProfile({
+          id: stored.userId,
+          user_id: stored.userId,
+          nome: stored.nome,
+          telefone: null,
+          cpf: null,
+          cargo: stored.role === "ceo" ? "CEO" : stored.role === "admin" ? "Admin" : "Colaborador",
+          nivel_acesso: stored.role,
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        setRole(stored.role);
+      } else {
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setRole(null);
+      }
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -72,7 +161,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -84,7 +172,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isIsolated, currentAgency.id]);
 
   const fetchUserData = async (userId: string) => {
     try {
@@ -116,10 +205,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      if (useMockAuth()) {
+      if (isIsolated) {
+        const users = loadLocalUsers();
+        const found = users.find((u) => u.email === email && u.password === password);
+        if (!found) throw new Error("Credenciais inválidas para esta agência");
+        const localUser = { id: found.id || safeId("user"), email: found.email, user_metadata: { name: found.nome } } as unknown as User;
+        setUser(localUser);
+        setSession(null);
+        setProfile({
+          id: localUser.id,
+          user_id: localUser.id,
+          nome: found.nome,
+          telefone: found.telefone || null,
+          cpf: found.cpf || null,
+          cargo: found.cargo || null,
+          nivel_acesso: found.role,
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        setRole(found.role);
+        try {
+          localStorage.setItem(
+            localSessionKey,
+            JSON.stringify({ userId: localUser.id, email: found.email, nome: found.nome, role: found.role })
+          );
+        } catch {
+          /* ignore */
+        }
+        setLoading(false);
+        return { error: null };
+      }
+
+      if (isMockAuthEnabled()) {
         const found = mockUsers.find((u) => u.email === email && u.password === password);
         if (!found) throw new Error("Credenciais inválidas");
-        const mockUser: any = { id: safeId("user"), email: found.email, user_metadata: { name: found.nome } };
+        const mockUser = { id: safeId("user"), email: found.email, user_metadata: { name: found.nome } } as unknown as User;
         setUser(mockUser);
         setSession(null);
         setProfile({ id: mockUser.id, user_id: mockUser.id, nome: found.nome, telefone: null, avatar_url: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
@@ -141,9 +262,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, nome: string, telefone: string, role: AppRole, cpf?: string, cargo?: string) => {
     try {
-      if (useMockAuth()) {
-        mockUsers.push({ email, password, nome, role, 
+      if (isIsolated) {
+        const users = loadLocalUsers();
+        if (users.some((u) => u.email === email)) throw new Error("E-mail já cadastrado para esta agência");
+        const localUser = {
+          id: safeId("user"),
+          email,
+          password,
+          nome,
+          telefone: telefone || null,
+          cpf: cpf || null,
+          cargo: cargo || null,
+          role,
+        };
+        persistLocalUsers([...users, localUser]);
+        // Auto-login apenas se não houver usuário ativo (ex: criação pela tela de login)
+        if (!user) {
+          setUser({ id: localUser.id, email: localUser.email } as unknown as User);
+          setProfile({
+            id: localUser.id,
+            user_id: localUser.id,
+            nome: localUser.nome,
+            telefone: localUser.telefone,
+            cpf: localUser.cpf,
+            cargo: localUser.cargo,
+            nivel_acesso: localUser.role,
+            avatar_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           });
+          setRole(localUser.role);
+          try {
+            localStorage.setItem(
+              localSessionKey,
+              JSON.stringify({ userId: localUser.id, email: localUser.email, nome: localUser.nome, role: localUser.role })
+            );
+          } catch {
+            /* ignore */
+          }
+        }
+        return { error: null };
+      }
+
+      if (isMockAuthEnabled()) {
+        mockUsers.push({ email, password, nome, role });
         setRole(role);
         setProfile({ id: safeId("user"), user_id: "mock", nome, telefone: telefone || null, cpf: cpf || null, cargo: cargo || null, nivel_acesso: role, avatar_url: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
         return { error: null };
@@ -199,6 +361,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (isIsolated) {
+      try {
+        localStorage.removeItem(localSessionKey);
+      } catch {
+        /* ignore */
+      }
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setRole(null);
+      return;
+    }
+
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -208,6 +383,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = async (data: Partial<Profile>) => {
     try {
+      if (isIsolated) {
+        setProfile((prev) => (prev ? { ...prev, ...data } : prev));
+        return { error: null };
+      }
+
       if (!user) throw new Error("Usuário não autenticado");
 
       const { error } = await supabase
@@ -228,7 +408,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const uploadAvatar = async (file: File) => {
     try {
       // Mock mode: apenas salva localmente em memória
-      if (useMockAuth()) {
+      if (isIsolated || isMockAuthEnabled()) {
         const url = URL.createObjectURL(file);
         setProfile((prev) =>
           prev

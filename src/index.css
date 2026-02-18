@@ -59,6 +59,12 @@ html {
     --chart-gradient-start: 72 90% 53%;
     --chart-gradient-end: 72 90% 45%;
     --glow-primary: 72 90% 53% / 0.2;
+
+    /* Auth/backdrop glows */
+    --auth-glow-1: rgba(124, 58, 237, 0.18);
+    --auth-glow-2: rgba(139, 92, 246, 0.22);
+    --auth-bg-1: #050505;
+    --auth-bg-2: #0d0d12;
   }
 
   .dark {
@@ -98,6 +104,20 @@ html {
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 15%;
     --sidebar-ring: 72 90% 53%;
+  }
+
+  :root[data-agency="sky"] {
+    --primary: 199 92% 60%;
+    --accent: 199 92% 60%;
+    --sidebar-primary: 199 92% 60%;
+    --chart-primary: 199 92% 60%;
+    --chart-gradient-start: 199 92% 60%;
+    --chart-gradient-end: 199 90% 52%;
+    --glow-primary: 199 92% 60% / 0.25;
+    --auth-glow-1: rgba(56, 189, 248, 0.18);
+    --auth-glow-2: rgba(14, 165, 233, 0.25);
+    --auth-bg-1: #020915;
+    --auth-bg-2: #0b1622;
   }
 }
 

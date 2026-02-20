@@ -30,6 +30,27 @@ export function DemandProvider({ children }: { children: ReactNode }) {
   const { isIsolated, currentAgency } = useAgency();
   const storageKey = useMemo(() => `crm_${currentAgency.id}_demands`, [currentAgency.id]);
 
+  const normalizeStatus = (value: unknown): DemandStatus => {
+    if (
+      value === "pendente" ||
+      value === "em_andamento" ||
+      value === "concluida" ||
+      value === "atrasada"
+    ) {
+      return value;
+    }
+    // Compat com valor legado salvo incorretamente
+    if (value === "em-andamento") return "em_andamento";
+    return "pendente";
+  };
+
+  const normalizePrioridade = (value: unknown): Demand["prioridade"] => {
+    if (value === "baixa" || value === "media" || value === "alta" || value === "urgente") {
+      return value;
+    }
+    return "media";
+  };
+
   const mapDemand = (row: Record<string, unknown>): Demand => {
     const clientId = typeof row.client_id === "string" ? row.client_id : "";
     const clientName =
@@ -52,8 +73,8 @@ export function DemandProvider({ children }: { children: ReactNode }) {
       dataPedido: row.data_pedido ? new Date(row.data_pedido as string) : new Date(),
       dataEntrega: row.data_entrega ? new Date(row.data_entrega as string) : new Date(),
       responsavel: (row.responsavel as string) || "",
-      status: (row.status as DemandStatus) || "em-andamento",
-      prioridade: (row.prioridade as Demand["prioridade"]) || "media",
+      status: normalizeStatus(row.status),
+      prioridade: normalizePrioridade(row.prioridade),
       tarefas,
       createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
     };

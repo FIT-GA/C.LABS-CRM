@@ -19,6 +19,9 @@ export interface Demand {
   createdAt: Date;
 }
 
+export type DemandStatus = Demand["status"];
+export type DemandPrioridade = Demand["prioridade"];
+
 export type DemandFormData = Omit<Demand, "id" | "createdAt" | "clientName">;
 
 export const statusOptions = [

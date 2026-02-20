@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -67,6 +67,37 @@ export function DemandForm({
   const { clients } = useClients();
   const [tarefas, setTarefas] = useState<TaskItem[]>(defaultValues?.tarefas || []);
   const [novaTarefa, setNovaTarefa] = useState("");
+  const safeClients = useMemo(
+    () => clients.filter((client) => client.id && client.id.trim().length > 0),
+    [clients]
+  );
+
+  const toFormDefaults = (values?: Partial<DemandFormData>): DemandSchemaType => {
+    const status = values?.status;
+    const prioridade = values?.prioridade;
+    return {
+      clientId: values?.clientId || "",
+      demanda: values?.demanda || "",
+      descricao: values?.descricao || "",
+      dataPedido: values?.dataPedido ? new Date(values.dataPedido) : new Date(),
+      dataEntrega: values?.dataEntrega ? new Date(values.dataEntrega) : new Date(),
+      responsavel: values?.responsavel || "",
+      status:
+        status === "pendente" ||
+        status === "em_andamento" ||
+        status === "concluida" ||
+        status === "atrasada"
+          ? status
+          : "pendente",
+      prioridade:
+        prioridade === "baixa" ||
+        prioridade === "media" ||
+        prioridade === "alta" ||
+        prioridade === "urgente"
+          ? prioridade
+          : "media",
+    };
+  };
 
   const {
     register,
@@ -77,24 +108,16 @@ export function DemandForm({
     formState: { errors },
   } = useForm<DemandSchemaType>({
     resolver: zodResolver(demandSchema),
-    defaultValues: {
-      clientId: defaultValues?.clientId || "",
-      demanda: defaultValues?.demanda || "",
-      descricao: defaultValues?.descricao || "",
-      dataPedido: defaultValues?.dataPedido ? new Date(defaultValues.dataPedido) : new Date(),
-      dataEntrega: defaultValues?.dataEntrega ? new Date(defaultValues.dataEntrega) : new Date(),
-      responsavel: defaultValues?.responsavel || "",
-      status: defaultValues?.status || "pendente",
-      prioridade: defaultValues?.prioridade || "media",
-    },
+    defaultValues: toFormDefaults(defaultValues),
   });
 
   useEffect(() => {
     if (open) {
+      reset(toFormDefaults(defaultValues));
       setTarefas(defaultValues?.tarefas || []);
       setNovaTarefa("");
     }
-  }, [defaultValues, open]);
+  }, [defaultValues, open, reset]);
 
   const handleFormSubmit = async (data: DemandSchemaType) => {
     const formData: DemandFormData = {
@@ -159,7 +182,7 @@ export function DemandForm({
                 <SelectValue placeholder="Selecione o cliente" />
               </SelectTrigger>
               <SelectContent>
-                {clients.map((client) => (
+                {safeClients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.razaoSocial}
                   </SelectItem>

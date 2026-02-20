@@ -35,6 +35,12 @@ export default function Demandas() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"dia" | "semana" | "mes">("semana");
 
+  const handleViewChange = (value: string) => {
+    if (value === "dia" || value === "semana" || value === "mes") {
+      setView(value);
+    }
+  };
+
   const filteredDemands = useMemo(() => {
     return demands.filter((d) => {
       const matchesSearch =
@@ -158,7 +164,7 @@ export default function Demandas() {
 
         {/* Calendar Views */}
         <div className="p-6 rounded-xl bg-card border border-border card-glow">
-          <Tabs value={view} onValueChange={(v) => setView(v as any)} className="space-y-4">
+          <Tabs value={view} onValueChange={handleViewChange} className="space-y-4">
             <div className="flex items-center justify-between">
               <TabsList className="bg-secondary">
                 <TabsTrigger value="dia">Dia</TabsTrigger>

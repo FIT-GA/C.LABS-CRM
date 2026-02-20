@@ -36,6 +36,12 @@ export default function Financeiro() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<"entradas" | "despesas" | "visao">("entradas");
 
+  const handleTabChange = (value: string) => {
+    if (value === "entradas" || value === "despesas" || value === "visao") {
+      setTab(value);
+    }
+  };
+
   // Ajusta aba inicial conforme rota acessada (/entradas ou /despesas)
   useEffect(() => {
     if (location.pathname.includes("despesa")) {
@@ -109,7 +115,7 @@ export default function Financeiro() {
           </div>
         </div>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="space-y-6">
+        <Tabs value={tab} onValueChange={handleTabChange} className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(parseInt(v))}>
               <SelectTrigger className="w-[120px] bg-card border-border">

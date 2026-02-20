@@ -278,7 +278,9 @@ export function DemandForm({
               <Label>Prioridade *</Label>
               <Select
                 value={watch("prioridade")}
-                onValueChange={(value) => setValue("prioridade", value as any)}
+                onValueChange={(value) =>
+                  setValue("prioridade", value as DemandSchemaType["prioridade"])
+                }
               >
                 <SelectTrigger className="bg-secondary border-border">
                   <SelectValue />
@@ -299,7 +301,9 @@ export function DemandForm({
             <Label>Status *</Label>
             <Select
               value={watch("status")}
-              onValueChange={(value) => setValue("status", value as any)}
+              onValueChange={(value) =>
+                setValue("status", value as DemandSchemaType["status"])
+              }
             >
               <SelectTrigger className="bg-secondary border-border">
                 <SelectValue />

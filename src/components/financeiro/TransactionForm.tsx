@@ -126,10 +126,10 @@ export function TransactionForm({
       });
       reset();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: "Erro ao salvar",
-        description: err?.message || "Não foi possível registrar a transação.",
+        description: err instanceof Error ? err.message : "Não foi possível registrar a transação.",
         variant: "destructive",
       });
     }

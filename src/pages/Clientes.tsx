@@ -36,10 +36,10 @@ export default function Clientes() {
         toast({ title: "Cliente cadastrado", description: data.razaoSocial });
       }
       setIsFormOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: "Erro ao salvar cliente",
-        description: err?.message || "Tente novamente",
+        description: err instanceof Error ? err.message : "Tente novamente",
         variant: "destructive",
       });
     }

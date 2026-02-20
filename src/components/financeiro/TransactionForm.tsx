@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -66,7 +66,13 @@ export function TransactionForm({
   const { clients } = useClients();
   const currentYear = new Date().getFullYear();
   const defaultMonth = defaultMes || new Date().getMonth() + 1;
-  const safeClients = clients.filter((c) => c.id && c.id.trim() !== "");
+  const safeClients = useMemo(
+    () =>
+      clients
+        .filter((c) => c.id && c.id.trim() !== "")
+        .map((c) => ({ ...c, id: c.id.trim() })),
+    [clients]
+  );
 
   const {
     register,
@@ -92,6 +98,19 @@ export function TransactionForm({
   });
 
   const tipo = watch("tipo") || "entrada";
+  const categoriaSelecionada = watch("categoria") ?? "";
+  const clientIdSelecionado = watch("clientId");
+  const clientSelectValue =
+    clientIdSelecionado && clientIdSelecionado.trim().length > 0
+      ? clientIdSelecionado.trim()
+      : "none";
+  const categoryOptions = useMemo(
+    () =>
+      (categorias[tipo || "entrada"] || [])
+        .map((cat) => String(cat).trim())
+        .filter((cat) => cat.length > 0),
+    [tipo]
+  );
 
   // Reaplica defaults toda vez que abrir ou mudar mês/tipo padrão
   useEffect(() => {
@@ -222,15 +241,12 @@ export function TransactionForm({
                 {/* Categoria */}
                 <div className="space-y-2">
                   <Label>Categoria *</Label>
-                  <Select
-                    value={watch("categoria")}
-                    onValueChange={(value) => setValue("categoria", value)}
-                  >
+                  <Select value={categoriaSelecionada} onValueChange={(value) => setValue("categoria", value)}>
                     <SelectTrigger className="bg-secondary border-border">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                   <SelectContent>
-                    {(categorias[tipo || "entrada"] || []).filter(Boolean).map((cat) => (
+                    {categoryOptions.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
                       </SelectItem>
@@ -290,7 +306,7 @@ export function TransactionForm({
                 <div className="space-y-2">
                   <Label>Cliente (opcional)</Label>
                   <Select
-                    value={watch("clientId") ?? "none"}
+                    value={clientSelectValue}
                     onValueChange={(value) => {
                       setValue("clientId", value === "none" ? undefined : value);
                       setValue("referenciaNome", ""); // se escolher da lista, limpa texto

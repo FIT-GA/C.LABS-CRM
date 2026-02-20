@@ -102,9 +102,9 @@ const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, value, ...props }, ref) => {
-  // Radix não aceita value === "" em SelectItem; geramos um fallback seguro.
-  const safeValue =
-    value === "" || value === undefined || value === null ? "__empty__" : (value as string);
+  // Radix não aceita value vazio em SelectItem; normalizamos para evitar crash de runtime.
+  const normalized = value === undefined || value === null ? "" : String(value).trim();
+  const safeValue = normalized.length === 0 ? "__empty__" : normalized;
 
   return (
     <SelectPrimitive.Item

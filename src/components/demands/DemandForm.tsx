@@ -51,6 +51,7 @@ const demandSchema = z.object({
 
 type DemandSchemaType = z.infer<typeof demandSchema>;
 type ResponsavelOption = { value: string; label: string; role?: string };
+const ALLOWED_DEMAND_RESPONSIBLE_ROLES = ["colaborador", "ceo"] as const;
 
 interface DemandFormProps {
   open: boolean;
@@ -158,7 +159,7 @@ export function DemandForm({
             .filter((u) => {
               const nome = typeof u.nome === "string" ? u.nome.trim() : "";
               const tipo = typeof u.role === "string" ? u.role : "";
-              return nome.length > 0 && ["colaborador", "ceo", "admin"].includes(tipo);
+              return nome.length > 0 && ALLOWED_DEMAND_RESPONSIBLE_ROLES.includes(tipo as (typeof ALLOWED_DEMAND_RESPONSIBLE_ROLES)[number]);
             })
             .map((u) => {
               const nome = String(u.nome).trim();
@@ -194,12 +195,17 @@ export function DemandForm({
           const profileRole = typeof row.nivel_acesso === "string" ? row.nivel_acesso : undefined;
           const userRole = roleMap.get(userId);
           const finalRole = profileRole || userRole;
-          if (finalRole && !["colaborador", "ceo", "admin"].includes(finalRole)) continue;
+          if (
+            finalRole &&
+            !ALLOWED_DEMAND_RESPONSIBLE_ROLES.includes(
+              finalRole as (typeof ALLOWED_DEMAND_RESPONSIBLE_ROLES)[number]
+            )
+          ) {
+            continue;
+          }
           const roleLabel =
             finalRole === "ceo"
               ? "CEO"
-              : finalRole === "admin"
-              ? "Admin"
               : finalRole === "colaborador"
               ? "Colaborador"
               : "Equipe";
@@ -210,17 +216,21 @@ export function DemandForm({
           const currentName = profile.nome.trim();
           if (!optionsMap.has(currentName)) {
             const currentRole = role || profile.nivel_acesso || "colaborador";
-            const roleLabel =
-              currentRole === "ceo"
-                ? "CEO"
-                : currentRole === "admin"
-                ? "Admin"
-                : "Colaborador";
-            optionsMap.set(currentName, {
-              value: currentName,
-              label: `${currentName} (${roleLabel})`,
-              role: currentRole,
-            });
+            if (
+              ALLOWED_DEMAND_RESPONSIBLE_ROLES.includes(
+                currentRole as (typeof ALLOWED_DEMAND_RESPONSIBLE_ROLES)[number]
+              )
+            ) {
+              const roleLabel =
+                currentRole === "ceo"
+                  ? "CEO"
+                  : "Colaborador";
+              optionsMap.set(currentName, {
+                value: currentName,
+                label: `${currentName} (${roleLabel})`,
+                role: currentRole,
+              });
+            }
           }
         }
 
@@ -234,7 +244,10 @@ export function DemandForm({
           const fallbackName = profile?.nome?.trim();
           setResponsavelOptions(
             fallbackName
-              ? [{ value: fallbackName, label: `${fallbackName} (${role === "ceo" ? "CEO" : role === "admin" ? "Admin" : "Colaborador"})` }]
+              ? [{
+                  value: fallbackName,
+                  label: `${fallbackName} (${role === "ceo" ? "CEO" : "Colaborador"})`,
+                }]
               : []
           );
         }

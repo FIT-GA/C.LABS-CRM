@@ -6,7 +6,10 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DemandFormData, TaskItem, statusOptions, prioridadeOptions } from "@/types/demand";
 import { useClients } from "@/contexts/ClientContext";
+import { useAgency } from "@/contexts/AgencyContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { safeId } from "@/lib/safeId";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +50,7 @@ const demandSchema = z.object({
 });
 
 type DemandSchemaType = z.infer<typeof demandSchema>;
+type ResponsavelOption = { value: string; label: string; role?: string };
 
 interface DemandFormProps {
   open: boolean;
@@ -65,8 +69,12 @@ export function DemandForm({
 }: DemandFormProps) {
   const { toast } = useToast();
   const { clients } = useClients();
+  const { currentAgency, isIsolated } = useAgency();
+  const { profile, role } = useAuth();
   const [tarefas, setTarefas] = useState<TaskItem[]>(defaultValues?.tarefas || []);
   const [novaTarefa, setNovaTarefa] = useState("");
+  const [responsavelOptions, setResponsavelOptions] = useState<ResponsavelOption[]>([]);
+  const [loadingResponsaveis, setLoadingResponsaveis] = useState(false);
   const safeClients = useMemo(
     () =>
       clients
@@ -135,15 +143,130 @@ export function DemandForm({
     }
   }, [defaultValues, open, reset]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    const loadResponsaveis = async () => {
+      setLoadingResponsaveis(true);
+      try {
+        if (isIsolated) {
+          const localUsersKey = `crm_${currentAgency.id}_users`;
+          const raw = localStorage.getItem(localUsersKey);
+          const parsed = raw ? (JSON.parse(raw) as Array<Record<string, unknown>>) : [];
+          const next = parsed
+            .filter((u) => {
+              const nome = typeof u.nome === "string" ? u.nome.trim() : "";
+              const tipo = typeof u.role === "string" ? u.role : "";
+              return nome.length > 0 && ["colaborador", "ceo", "admin"].includes(tipo);
+            })
+            .map((u) => {
+              const nome = String(u.nome).trim();
+              const tipo = String(u.role);
+              const roleLabel =
+                tipo === "ceo" ? "CEO" : tipo === "admin" ? "Admin" : "Colaborador";
+              return { value: nome, label: `${nome} (${roleLabel})`, role: tipo };
+            });
+          const unique = Array.from(new Map(next.map((item) => [item.value, item])).values()).sort(
+            (a, b) => a.label.localeCompare(b.label, "pt-BR")
+          );
+          if (!cancelled) setResponsavelOptions(unique);
+          return;
+        }
+
+        const [profilesResp, rolesResp] = await Promise.all([
+          supabase.from("profiles").select("*"),
+          supabase.from("user_roles").select("user_id, role"),
+        ]);
+
+        if (profilesResp.error) throw profilesResp.error;
+        if (rolesResp.error) throw rolesResp.error;
+
+        const roleMap = new Map(
+          (rolesResp.data || []).map((r) => [r.user_id, r.role as string | undefined])
+        );
+
+        const optionsMap = new Map<string, ResponsavelOption>();
+        for (const row of (profilesResp.data || []) as Array<Record<string, unknown>>) {
+          const nome = typeof row.nome === "string" ? row.nome.trim() : "";
+          const userId = typeof row.user_id === "string" ? row.user_id : "";
+          if (!nome) continue;
+          const profileRole = typeof row.nivel_acesso === "string" ? row.nivel_acesso : undefined;
+          const userRole = roleMap.get(userId);
+          const finalRole = profileRole || userRole;
+          if (finalRole && !["colaborador", "ceo", "admin"].includes(finalRole)) continue;
+          const roleLabel =
+            finalRole === "ceo"
+              ? "CEO"
+              : finalRole === "admin"
+              ? "Admin"
+              : finalRole === "colaborador"
+              ? "Colaborador"
+              : "Equipe";
+          optionsMap.set(nome, { value: nome, label: `${nome} (${roleLabel})`, role: finalRole });
+        }
+
+        if (profile?.nome?.trim()) {
+          const currentName = profile.nome.trim();
+          if (!optionsMap.has(currentName)) {
+            const currentRole = role || profile.nivel_acesso || "colaborador";
+            const roleLabel =
+              currentRole === "ceo"
+                ? "CEO"
+                : currentRole === "admin"
+                ? "Admin"
+                : "Colaborador";
+            optionsMap.set(currentName, {
+              value: currentName,
+              label: `${currentName} (${roleLabel})`,
+              role: currentRole,
+            });
+          }
+        }
+
+        const next = Array.from(optionsMap.values()).sort((a, b) =>
+          a.label.localeCompare(b.label, "pt-BR")
+        );
+        if (!cancelled) setResponsavelOptions(next);
+      } catch (error) {
+        console.error("Erro ao carregar responsáveis", error);
+        if (!cancelled) {
+          const fallbackName = profile?.nome?.trim();
+          setResponsavelOptions(
+            fallbackName
+              ? [{ value: fallbackName, label: `${fallbackName} (${role === "ceo" ? "CEO" : role === "admin" ? "Admin" : "Colaborador"})` }]
+              : []
+          );
+        }
+      } finally {
+        if (!cancelled) setLoadingResponsaveis(false);
+      }
+    };
+
+    loadResponsaveis();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isIsolated, currentAgency.id, profile?.nome, profile?.nivel_acesso, role]);
+
   const watchedClientId = (watch("clientId") || "").trim();
   const watchedStatus = normalizeDemandStatus(watch("status"));
   const watchedPrioridade = normalizeDemandPriority(watch("prioridade"));
+  const watchedResponsavel = (watch("responsavel") || "").trim();
   const missingClientOption =
     watchedClientId &&
     !safeClients.some((client) => client.id === watchedClientId)
       ? {
           id: watchedClientId,
           razaoSocial: "Cliente vinculado (não encontrado)",
+        }
+      : null;
+  const missingResponsavelOption =
+    watchedResponsavel &&
+    !responsavelOptions.some((option) => option.value === watchedResponsavel)
+      ? {
+          value: watchedResponsavel,
+          label: `${watchedResponsavel} (responsável atual)`,
         }
       : null;
 
@@ -317,13 +440,30 @@ export function DemandForm({
           <div className="grid grid-cols-2 gap-4">
             {/* Responsável */}
             <div className="space-y-2">
-              <Label htmlFor="responsavel">Responsável *</Label>
-              <Input
-                id="responsavel"
-                placeholder="Nome do responsável"
-                {...register("responsavel")}
-                className="bg-secondary border-border"
-              />
+              <Label>Responsável *</Label>
+              <input type="hidden" {...register("responsavel")} />
+              <Select
+                value={watchedResponsavel}
+                onValueChange={(value) =>
+                  setValue("responsavel", value, { shouldValidate: true, shouldDirty: true })
+                }
+              >
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder={loadingResponsaveis ? "Carregando responsáveis..." : "Selecione o responsável"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {missingResponsavelOption && (
+                    <SelectItem value={missingResponsavelOption.value}>
+                      {missingResponsavelOption.label}
+                    </SelectItem>
+                  )}
+                  {responsavelOptions.map((option) => (
+                    <SelectItem key={`${option.value}-${option.role ?? "na"}`} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.responsavel && (
                 <p className="text-sm text-destructive">{errors.responsavel.message}</p>
               )}

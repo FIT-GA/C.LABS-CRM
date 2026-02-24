@@ -68,34 +68,50 @@ export function DemandForm({
   const [tarefas, setTarefas] = useState<TaskItem[]>(defaultValues?.tarefas || []);
   const [novaTarefa, setNovaTarefa] = useState("");
   const safeClients = useMemo(
-    () => clients.filter((client) => client.id && client.id.trim().length > 0),
+    () =>
+      clients
+        .filter((client) => client.id && client.id.trim().length > 0)
+        .map((client) => ({ ...client, id: client.id.trim() })),
     [clients]
   );
 
+  const normalizeDemandStatus = (value?: string): DemandSchemaType["status"] => {
+    if (value === "pendente" || value === "em_andamento" || value === "concluida" || value === "atrasada") {
+      return value;
+    }
+    if (value === "em-andamento" || value === "em andamento" || value === "andamento") {
+      return "em_andamento";
+    }
+    if (value === "concluída") {
+      return "concluida";
+    }
+    return "pendente";
+  };
+
+  const normalizeDemandPriority = (value?: string): DemandSchemaType["prioridade"] => {
+    if (value === "baixa" || value === "media" || value === "alta" || value === "urgente") {
+      return value;
+    }
+    if (value === "média" || value === "Media") return "media";
+    if (value === "Alta") return "alta";
+    if (value === "Baixa") return "baixa";
+    if (value === "Urgente") return "urgente";
+    return "media";
+  };
+
   const toFormDefaults = (values?: Partial<DemandFormData>): DemandSchemaType => {
-    const status = values?.status;
-    const prioridade = values?.prioridade;
+    const status = typeof values?.status === "string" ? values.status : undefined;
+    const prioridade = typeof values?.prioridade === "string" ? values.prioridade : undefined;
+    const clientId = typeof values?.clientId === "string" ? values.clientId.trim() : "";
     return {
-      clientId: values?.clientId || "",
+      clientId,
       demanda: values?.demanda || "",
       descricao: values?.descricao || "",
       dataPedido: values?.dataPedido ? new Date(values.dataPedido) : new Date(),
       dataEntrega: values?.dataEntrega ? new Date(values.dataEntrega) : new Date(),
       responsavel: values?.responsavel || "",
-      status:
-        status === "pendente" ||
-        status === "em_andamento" ||
-        status === "concluida" ||
-        status === "atrasada"
-          ? status
-          : "pendente",
-      prioridade:
-        prioridade === "baixa" ||
-        prioridade === "media" ||
-        prioridade === "alta" ||
-        prioridade === "urgente"
-          ? prioridade
-          : "media",
+      status: normalizeDemandStatus(status),
+      prioridade: normalizeDemandPriority(prioridade),
     };
   };
 
@@ -118,6 +134,18 @@ export function DemandForm({
       setNovaTarefa("");
     }
   }, [defaultValues, open, reset]);
+
+  const watchedClientId = (watch("clientId") || "").trim();
+  const watchedStatus = normalizeDemandStatus(watch("status"));
+  const watchedPrioridade = normalizeDemandPriority(watch("prioridade"));
+  const missingClientOption =
+    watchedClientId &&
+    !safeClients.some((client) => client.id === watchedClientId)
+      ? {
+          id: watchedClientId,
+          razaoSocial: "Cliente vinculado (não encontrado)",
+        }
+      : null;
 
   const handleFormSubmit = async (data: DemandSchemaType) => {
     const formData: DemandFormData = {
@@ -175,13 +203,18 @@ export function DemandForm({
           <div className="space-y-2">
             <Label>Cliente *</Label>
             <Select
-              value={watch("clientId")}
+              value={watchedClientId}
               onValueChange={(value) => setValue("clientId", value)}
             >
               <SelectTrigger className="bg-secondary border-border">
                 <SelectValue placeholder="Selecione o cliente" />
               </SelectTrigger>
               <SelectContent>
+                {missingClientOption && (
+                  <SelectItem value={missingClientOption.id}>
+                    {missingClientOption.razaoSocial}
+                  </SelectItem>
+                )}
                 {safeClients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.razaoSocial}
@@ -300,7 +333,7 @@ export function DemandForm({
             <div className="space-y-2">
               <Label>Prioridade *</Label>
               <Select
-                value={watch("prioridade")}
+                value={watchedPrioridade}
                 onValueChange={(value) =>
                   setValue("prioridade", value as DemandSchemaType["prioridade"])
                 }
@@ -323,7 +356,7 @@ export function DemandForm({
           <div className="space-y-2">
             <Label>Status *</Label>
             <Select
-              value={watch("status")}
+              value={watchedStatus}
               onValueChange={(value) =>
                 setValue("status", value as DemandSchemaType["status"])
               }
